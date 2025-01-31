@@ -1,0 +1,12 @@
+.dart_tool/
+.idea/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+.project
+.settings/
+.vscode/
+build/
+ios/Pods/
+*.iml
+*.locks

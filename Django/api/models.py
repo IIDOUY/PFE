@@ -19,30 +19,151 @@ class UserManager(BaseUserManager):
 
         return self.create_user(email, username, password, **extra_fields)
 
-# Modèle utilisateur personnalisé
+# Modèle utilisateur personnalisé (table 1)
 class User(AbstractBaseUser, PermissionsMixin):
     fullname = models.CharField(max_length=150)
     username = models.CharField(max_length=150, unique=True)
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=128)  # Le mot de passe est stocké de manière sécurisée
     phone = models.CharField(max_length=15, blank=True, null=True)
+    address = models.CharField(max_length=255, blank=True, null=True)
     gender = models.CharField(max_length=10, choices=[('Male', 'Male'), ('Female', 'Female')])
+    is_vip = models.BooleanField(default=False)
+    avatarUrl = models.CharField(max_length=255, blank=True, null=True)    
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)  # Champ pour déterminer l'accès à l'admin
     is_superuser = models.BooleanField(default=False)  # Champ pour déterminer si l'utilisateur est un superutilisateur
-    is_vip = models.BooleanField(default=False) # Champ pour déterminer si l'utilisateur est un VIP
-    avatarUrl = models.CharField(max_length=100)
+    date_joined = models.DateTimeField(auto_now_add=True)
 
     # Champs obligatoires pour l'authentification
     USERNAME_FIELD = 'username'  # Tu peux utiliser email ou username comme champ pour l'authentification
-   # REQUIRED_FIELDS = ['username']  # Ce champ est requis lors de la création d'un superutilisateur
+    REQUIRED_FIELDS = ['email']  # Ce champ est requis lors de la création d'un superutilisateur
 
     objects = UserManager()
 
     def __str__(self):
         return self.username
 
-#Modele reset password
+#Modele de prestataire du service (table 2)
+class Provider(models.Model):
+    fullname = models.CharField(max_length=150)
+    email = models.EmailField(unique=True)
+    gender = models.CharField(max_length=10, choices=[('Male', 'Male'), ('Female', 'Female')])
+    phone = models.CharField(max_length=15, blank=True, null=True)
+    address = models.CharField(max_length=255, blank=True)
+    services = models.CharField(max_length=255)
+    is_disponible = models.BooleanField(default=True)
+    rating_avg = models.FloatField(default=0)
+    added_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.fullname
+
+#-------------------------------------------------------------------------------------------------------------
+#Modele de categorie de services (table 3)
+class Category(models.Model):
+    category_id = models.AutoField(primary_key=True)
+    category_name = models.CharField(max_length=255)
+    category_description = models.TextField()
+
+    def __str__(self):
+        return self.category_name
+    
+#Modele de services (table 4)
+class Services(models.Model):
+    service_id = models.AutoField(primary_key=True)
+    service_name = models.CharField(max_length=255)
+    service_description = models.TextField()
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
+    service_price = models.FloatField()
+
+
+    def __str__(self):
+        return self.service_name
+
+#Modele de link entre utilisateur et prestataire (table 5)
+class Link(models.Model):
+    link_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    provider = models.ForeignKey(Provider, on_delete=models.CASCADE)
+    service = models.ForeignKey(Services, on_delete=models.CASCADE)
+    price = models.FloatField()
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    linked_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} linked to {self.provider.fullname}"
+    
+#-------------------------------------------------------------------------------------------------------------
+#Modele de demande de service (table 6)
+class Request(models.Model):
+    request_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    service_id = models.ForeignKey(Services, on_delete=models.CASCADE)
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    request_date = models.DateTimeField(auto_now_add=True)
+    request_status = models.CharField(max_length=20, choices=[('Pending', 'Pending'), ('Accepted', 'Accepted'), ('Rejected', 'Rejected')], default='Pending')
+
+    def __str__(self):
+        return f"{self.user.username} requested {self.service_id.service_name}"
+    
+#-------------------------------------------------------------------------------------------------------------
+#Modele de note et commentaire pour le prestataire (table 7)
+class ProviderRating(models.Model):
+    rating_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    provider = models.ForeignKey(Provider, on_delete=models.CASCADE)
+    stars = models.IntegerField(choices=[(1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')], default=1)
+    comment = models.TextField()
+    rated_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} rated {self.provider.fullname}"
+    class Meta:
+        unique_together = ('user', 'provider')  # Un utilisateur ne peut noter un prestataire qu'une seule fois
+
+#Modele de note et commentaire pour le service  (table 8)
+class ServiceRating(models.Model):
+    rating_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    Provider = models.ForeignKey(Provider, on_delete=models.CASCADE)
+    service = models.ForeignKey(Services, on_delete=models.CASCADE)
+    stars = models.IntegerField(choices=[(1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')], default=1)
+    comment = models.TextField()
+    rated_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} rated {self.service.service_name}"
+
+#Modele de reclamation (table 9)
+class Report(models.Model):
+    report_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    provider = models.ForeignKey(Provider, on_delete=models.CASCADE)
+    report_text = models.TextField()
+    status = models.CharField(max_length=20, choices=[('Pending', 'Pending'),('Reviewed','Reviewed'), ('Solved', 'Solved')], default='Pending')
+    reported_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} reported {self.provider.fullname}"
+    
+#-------------------------------------------------------------------------------------------------------------
+#Modele de paiement (table 10)
+class Payment(models.Model):
+    payment_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    request_id = models.ForeignKey(Services, on_delete=models.CASCADE)
+    price = models.FloatField()
+    status = models.CharField(max_length=20, choices=[('Pending', 'Pending'), ('Paid', 'Paid'), ('Failed', 'Failed')], default='Pending')
+    payment_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} paid {self.provider.fullname}"
+    
+#-------------------------------------------------------------------------------------------------------------
+#Modele reset password (table 11)
 class PasswordResetOTP(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     otp = models.CharField(max_length=6)  # Code OTP à 6 chiffres

@@ -13,8 +13,11 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
 
 #added by me
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -54,6 +57,7 @@ INSTALLED_APPS = [
     'django_rest_passwordreset',
     'api',
     'corsheaders',
+    'rest_framework_simplejwt.token_blacklist',
     
 ]
 
@@ -93,10 +97,19 @@ WSGI_APPLICATION = 'Django.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.sqlite3',
+    #     'NAME': BASE_DIR / 'db.sqlite3',
+    # }
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',  # Moteur MySQL
+        'NAME': 'backend',  # Mets ici le nom de ta base de données
+        'USER': 'root',  # Ton utilisateur MySQL (par défaut 'root')
+        'PASSWORD': '123456789',  # Mot de passe MySQL
+        'HOST': '127.0.0.1',  # Adresse du serveur (localhost)
+        'PORT': '3306',  # Port MySQL (par défaut 3306)
     }
+
 }
 
 
@@ -157,8 +170,8 @@ CORS_ALLOW_ALL_ORIGINS = True
 # JWT OPTIONS
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60), #60 minutes
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1), #1 day
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'USER_ID_FIELD': 'id',

@@ -18,10 +18,10 @@ urlpatterns = [
     #------------------------------------------------------------------------------------------------- 
     #Endpoint pour la recuperation des informations de l'utilisateur connecté
     path('profile/', UserProfileView.as_view(), name='users'),
-    #Endpoint pour la recuperation/ajout des utilisateurs pour l'administrateur
+    #Endpoint pour la recuperation/ajout/modification/suppression des utilisateurs pour l'administrateur
     path('users/', UserView.as_view(), name='users'), #exemple:http://
     #-------------------------------------------------------------------------------------------------
-    #Endpoint pour la recuperation/ajout des prestataires
+    #Endpoint pour la recuperation/ajout/modification/suppression  des prestataires
     path('providers/', ProviderProfileView.as_view(), name='providers'), #exemple:http://127.0.0.1:8000/providers/?name=Mohamed Dreuiche
     path('user-providers/', UserProviderView.as_view(), name='user_providers'),
     #-------------------------------------------------------------------------------------------------

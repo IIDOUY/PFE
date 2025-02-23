@@ -30,8 +30,18 @@ class UserView(APIView):
     authentication_classes = [JWTAuthentication]  # Utilise le JWT pour l'authentification
     #lister les utilisateurs
     def get(self, request):
-        users = User.objects.all() 
-        serializer = UserSerializer(users, context = {'request': request}, many = True)  
+        user_id = request.query_params.get('id', None)
+        user_name = request.query_params.get('username', None)
+
+        # Filtrer en fonction des paramètres fournis
+        filters = {}
+        if user_id:
+            filters['id'] = user_id
+        if user_name:
+            filters['username__icontains'] = user_name  # Recherche insensible à la casse
+
+        users = User.objects.filter(**filters)
+        serializer = UserSerializer(users, context={'request': request}, many=True)
         return Response(serializer.data, status=200)
     #ajouter un utilisateur
     def post(self, request):
@@ -184,7 +194,15 @@ class ServicesView(APIView):
     authentication_classes = [JWTAuthentication]  # Utilise le JWT pour l'authentification
     #lister les services
     def get(self, request):
-        services = Services.objects.all() 
+        service_id = request.query_params.get('id', None)
+        service_name = request.query_params.get('name', None)
+        # Filtrer en fonction des paramètres fournis
+        filters = {}
+        if service_id:
+            filters['service_id'] = service_id
+        if service_name:
+            filters['service_name__icontains'] = service_name  # Recherche insensible à la casse
+        services = Services.objects.filter(**filters)
         serializer = ServicesSerializer(services, context = {'request': request}, many = True)  
         return Response(serializer.data, status=200)
     #ajouter un service

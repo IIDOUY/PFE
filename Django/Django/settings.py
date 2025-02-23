@@ -25,10 +25,12 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 EMAIL_HOST_USER = "dreuichv@gmail.com"
-EMAIL_HOST_PASSWORD = "ynua tmqe nmwt vadp"
+EMAIL_HOST_PASSWORD = "eall fitn mryy uawq"
 
-
+#added by me
 AUTH_USER_MODEL = "api.User"
+#added by me
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -58,6 +60,7 @@ INSTALLED_APPS = [
     'api',
     'corsheaders',
     'rest_framework_simplejwt.token_blacklist',
+    'drf_yasg',
     
 ]
 

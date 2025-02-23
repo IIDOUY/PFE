@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:easelink/pages/welcomePage.dart';
 // import 'pages/WelcomePage.dart';
 void main() {
-  // WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -18,5 +17,4 @@ class MyApp extends StatelessWidget {
       home: const WelcomePage(),
     );
   }
-
 }

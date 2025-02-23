@@ -1,5 +1,5 @@
 from django.urls import path
-from .AuthenticationView import SignUpView, LogiInView, LogoutView, SendResetOTPView, VerifyResetOTPView, ResetPasswordView
+from .AuthenticationView import SignUpView, LogiInView, LogoutView, SendResetOTPView, VerifyResetOTPView, ResetPasswordView, AdminLoginView
 from .views import UserProfileView, ProviderProfileView, CategoryView, ServicesView, RequestView, UserRequestView, UserView, UserServicesView, UserCategoryView, UserProviderView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -13,6 +13,7 @@ urlpatterns = [
     # Les endpoints pour l'authentification
     path('signup/', SignUpView.as_view(), name='signup'),
     path('login/', LogiInView.as_view(), name='signin'),
+    path('admin-login/', AdminLoginView.as_view(), name='admin_login'),
     path('logout/', LogoutView.as_view(), name='logout'),
     #------------------------------------------------------------------------------------------------- 
     #Endpoint pour la recuperation des informations de l'utilisateur connecté
@@ -46,8 +47,25 @@ urlpatterns = [
     # Les endpoints pour reset password
     path('password-reset/send-otp/', SendResetOTPView.as_view(), name='send_reset_otp'),
     path('password-reset/verify-otp/', VerifyResetOTPView.as_view(), name='verify_reset_otp'),
-    path('password-reset/reset/', ResetPasswordView.as_view(), name='reset_password'),
-    
+    path('password-reset/reset/', ResetPasswordView.as_view(), name='reset_password'),  
 ]
 
-    
+
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+from rest_framework import permissions
+
+schema_view = get_schema_view(
+    openapi.Info(
+        title="API Documentation",
+        default_version='v1',
+        description="Test API Django",
+    ),
+    public=True,
+    permission_classes=[permissions.AllowAny],
+)
+
+urlpatterns += [
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+]
+   

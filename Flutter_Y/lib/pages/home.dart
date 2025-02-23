@@ -1,3 +1,4 @@
+import 'package:easelink/pages/profile_page.dart';
 import 'package:flutter/material.dart';
 // ignore: unused_import
 import 'package:easelink/pages/profile.dart';
@@ -124,19 +125,6 @@ Container _searchField(){
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
   AppBar buildAppBar(BuildContext context) {
     return AppBar(
       title: const Column(
@@ -170,7 +158,7 @@ Container _searchField(){
           // Add code here to navigate to the profile page
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => ProfilePage()),
+                      MaterialPageRoute(builder: (context) => ProfilePage2()),
                     );
         },
         child: Container(

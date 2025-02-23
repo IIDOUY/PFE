@@ -21,12 +21,10 @@ class _SignUpPageState extends State<SignUpPage> {
   String confirmPassword = '';
   String phone = '';
   String gender = 'Select your Gender'; // Default value for gender
-  bool is_vip = false;
 
   //Django
   Future<void> _signUp() async {
-  final url = Uri.parse('http://192.168.1.108:8000/signup/');
-  
+  final url = Uri.parse('http://127.0.0.1:8000/signup/');
   final response = await http.post(
     url,
     headers: {'Content-Type': 'application/json'},
@@ -45,16 +43,8 @@ class _SignUpPageState extends State<SignUpPage> {
 	final data = json.decode(response.body);
 	final prefs = await SharedPreferences.getInstance();
     // Stocker les tokens localement
-    // await prefs.setString('user_id', data['user']['id']);//added
     await prefs.setString('access_token', data['access_token']);
     await prefs.setString('refresh_token', data['refresh_token']);
-    // await prefs.setString('user_id', data['user']['id'].toString()); // Store user ID
-        if (data.containsKey('user') && data['user'].containsKey('id')) {
-      await prefs.setString('user_id', data['user']['id'].toString());
-    } else {
-      print('Error: User ID not found in the response');
-      // Handle the error appropriately, e.g., show a message to the user
-    }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('User created successfully!')),
     );
@@ -72,20 +62,20 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 }
 
-// Future<void> getProtectedData(String accessToken) async {
-//   final url = Uri.parse('http://127.0.0.1:8000/protected/');
+Future<void> getProtectedData(String accessToken) async {
+  final url = Uri.parse('http://127.0.0.1:8000/api/protected/');
 
-//   final response = await http.get(
-//     url,
-//     headers: {'Authorization': 'Bearer $accessToken'},
-//   );
+  final response = await http.get(
+    url,
+    headers: {'Authorization': 'Bearer $accessToken'},
+  );
 
-//   if (response.statusCode == 200) {
-//     print('Data: ${response.body}');
-//   } else {
-//     print('Error: ${response.statusCode}');
-//   }
-// }
+  if (response.statusCode == 200) {
+    print('Data: ${response.body}');
+  } else {
+    print('Error: ${response.statusCode}');
+  }
+}
 //Django
 
   @override

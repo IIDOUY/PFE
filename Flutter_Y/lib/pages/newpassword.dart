@@ -19,7 +19,7 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
   String _message = '';
 
   Future<void> _resetPassword() async {
-    final String apiUrl = 'http://192.168.1.108:8000/password-reset/reset/';
+    final String apiUrl = 'http://127.0.0.1:8000/password-reset/reset/';
 
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -33,7 +33,7 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
           headers: {'Content-Type': 'application/json'},
           body: json.encode({
             'email': widget.email,
-            'password': _passwordController.text,
+            'new_password': _passwordController.text,
             'confirm_password': _confirmPasswordController.text,
           }),
         );

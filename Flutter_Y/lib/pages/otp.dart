@@ -40,7 +40,7 @@ class _OtpScreenState extends State<OtpScreen> {
 
     try {
       final response = await _dio.post(
-        'http://192.168.1.108:8000/password-reset/verify-otp/',
+        'http://127.0.0.1:8000/password-reset/verify-otp/',
         data: {
           'email': widget.email,
           'otp': otp,

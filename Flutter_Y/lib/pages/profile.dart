@@ -1,273 +1,181 @@
-import 'dart:io';
-
-import 'package:easelink/pages/user_data.dart';
-import 'package:easelink/pages/welcomePage.dart';
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
-
+import 'package:easelink/pages/home.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-final GlobalKey<_ProfilePageState> profilePageKey = GlobalKey<_ProfilePageState>();
+import 'package:http/http.dart' as http;
 
 class ProfilePage extends StatefulWidget {
+  const ProfilePage({Key? key}) : super(key: key);
+
   @override
   _ProfilePageState createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  Map<String, dynamic>? userProfile;
+  bool isLoading = true;
 
-  // String? avatarPath;
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _loadAvatarPath();
-  //   getCurrentUser;
-  // }
-
-  // Future<void> _loadAvatarPath() async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   setState(() {
-  //     avatarPath = prefs.getString('avatar_path');
-  //   });
-  // }
-
-
-Future<User?> getCurrentUser() async {
-  final prefs = await SharedPreferences.getInstance();
-  final accessToken = prefs.getString('access_token');
-
-  if (accessToken == null) {
-    print('getCurrentUser: No access token found');
-    Navigator.pushReplacementNamed(context,'/Flutter_Y/lib/pages/login.dart');
-    return null; 
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserProfile(); // Fetch user data when the page loads
   }
 
-  final url = Uri.parse('http://192.168.1.108:8000/profile/');
-  final response = await http.get(
-    url,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $accessToken',
-    },
-  );
+  Future<void> _fetchUserProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+    final accessToken = prefs.getString('access_token');
 
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    print('getCurrentUser: Data fetched successfully: $data');
-    return User.fromJson(data);
-    } else if (response.statusCode == 401){
-      print('getCurrentUser: Access token expired, refreshing...');
-      _refreshToken();
-  
-  } else {
-    print('getCurrentUser: Failed to load user: ${response.statusCode}');
-    throw Exception('Failed to load user: ${response.statusCode}');
-  }
-}
-
-// Future<void> _refreshToken() async {
-//     try {
-//     final prefs = await SharedPreferences.getInstance();
-//     final refreshToken = prefs.getString('refresh_token');
-
-//     if (refreshToken == null) {
-//       print('No refresh token found');
-//       Navigator.pushReplacementNamed(context, '/Flutter_Y/lib/pages/login.dart');
-//       return; // No token found, user is not logged in
-//     }
-
-//     final url = Uri.parse('http://127.0.0.1:8000/token/refresh/');
-//     final response = await http.post(
-//       url,
-//       headers: {'Content-Type': 'application/json'},
-//       body: json.encode({
-//         'grant_type': 'refresh_token',
-//         'refresh_token': refreshToken,
-//       }),
-//     );
-
-//     if (response.statusCode == 200) {
-//       final data = json.decode(response.body);
-//       await prefs.setString('access_token', data['access_token']);
-//       print('Token refreshed successfully');
-//     } else {
-//       print('Failed to refresh token: ${response.statusCode}');
-//       Navigator.pushReplacementNamed(context, '/Flutter_Y/lib/pages/login.dart');
-//     }
-//   } catch (e) {
-//     print('Error refreshing token: $e');
-//     Navigator.pushReplacementNamed(context, '/Flutter_Y/lib/pages/login.dart');
-//   }
-// }
-
-  Future<void> _refreshToken() async {
-  final prefs = await SharedPreferences.getInstance();
-  final refreshToken = prefs.getString('refresh_token');
-
-  if (refreshToken == null) {
-    Navigator.pushReplacementNamed(context, '/login');
-    return;
-  }
-
-  final url = Uri.parse('http://127.0.0.1:8000/token/refresh/');
-  try{
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({'refresh': refreshToken}),
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      await prefs.setString('access_token', data['access']);
-      await getCurrentUser(); // Recharger les données utilisateur
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Session expired. Please log in again.')),
-      );
-      Navigator.pushReplacementNamed(context, '/login');
+    if (accessToken == null) {
+      // Redirect to the login page if no token is found
+      Navigator.pushReplacementNamed(context, '/Flutter_Y/lib/pages/login.dartlogin');
+      return;
     }
-  }catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('An error occurred: $e')),
-    );
-    Navigator.pushReplacementNamed(context, '/login');
+
+    final url = Uri.parse('http://127.0.0.1:8000/profile/');
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $accessToken', // Send access token
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          userProfile = json.decode(response.body);
+          isLoading = false;
+        });
+      } else if (response.statusCode == 401) {
+        // Token expired or invalid, refresh the token
+        await _refreshAccessToken();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to load profile. Please try again.')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('An error occurred: $e')),
+      );
+    }
   }
-}
+
+  Future<void> _refreshAccessToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final refreshToken = prefs.getString('refresh_token');
+
+    if (refreshToken == null) {
+      Navigator.pushReplacementNamed(context, '/Flutter_Y/lib/pages/login.dart');
+      return;
+    }
+
+    final url = Uri.parse('http://127.0.0.1:8000/token/refresh/');
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'refresh': refreshToken}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        await prefs.setString('access_token', data['access']);
+        await _fetchUserProfile(); // Reload user data
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Session expired. Please log in again.')),
+        );
+        Navigator.pushReplacementNamed(context, '/Flutter_Y/lib/pages/login.dart');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('An error occurred: $e')),
+      );
+      Navigator.pushReplacementNamed(context, '/Flutter_Y/lib/pages/login.dart');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: Text('Profile Page'),
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+        elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_outlined, color: Colors.black),
+          icon: const Icon(Icons.arrow_back_ios_new_outlined, color: Color.fromARGB(255, 0, 0, 0)),
           onPressed: () {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => WelcomePage()),
+              MaterialPageRoute(builder: (context) => MyHomePage()),
             );
           },
         ),
         actions: [
-          Icon(Icons.settings, color: Colors.black),
-          SizedBox(width: 16),
+          const Icon(Icons.settings, color: Color.fromARGB(255, 0, 0, 0)),
+          const SizedBox(width: 16),
         ],
       ),
-            body: FutureBuilder<User?>(
-        future: getCurrentUser(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (!snapshot.hasData || snapshot.data == null) {
-            return Center(child: Text('No user data found'));
-          } else {
-            final user = snapshot.data!;
-            return SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  ProfileInfo(user: user),
-                  StatsSection(user: user),
-                  if (!(user.isVIP ?? true)) VIPFeatures(user: user),
-                ],
-              ),
-            );
-          }
-        },
-      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : userProfile != null
+              ? SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      ProfileInfo(userProfile: userProfile!),
+                      StatsSection(),
+                      // ✅ Vérification si l'utilisateur est VIP
+                      if (userProfile!['is_vip'] == true) VIPFeatures(),
+
+                    ],
+                  ),
+                )
+              : const Center(child: Text('Failed to load profile')),
     );
   }
 }
 
-class User {
-  final String? name;
-  final String username;
-  final String? email;
-  final bool isVIP;
-  final String avatarUrl;
-
-  User({
-    required this.name,
-    required this.username,
-    required this.email,
-    required this.isVIP,
-    required this.avatarUrl,
-  });
-//----------------------------------------------------------------------------
-  factory User.fromJson(Map<String, dynamic> json) {
-    return User(
-      name: json['fullname'] as String?,
-      username: json['username'] as String,
-      email: json['email'] as String?,
-      isVIP: json['is_vip'] as bool,
-      avatarUrl: json['avatarUrl'] as String,
-    );
-  }
-}
-//------------------------------------------------------------------------------
 class ProfileInfo extends StatelessWidget {
-  final User user;
-  ProfileInfo({required this.user});
+  final Map<String, dynamic> userProfile;
+
+  const ProfileInfo({required this.userProfile});
 
   @override
   Widget build(BuildContext context) {
     return Stack(
-      alignment: Alignment.center,
+      alignment: Alignment.center, // Align content to center
       children: [
         Container(
           height: 150,
           width: double.infinity,
-//------------------------------------------------COVER
           decoration: BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage(user.isVIP ? "assets/images/test_cover_VIP.png" : "assets/images/test_cover.png"),
+            image: const DecorationImage(
+              image: AssetImage("assets/images/real.jpg"),
               fit: BoxFit.cover,
             ),
           ),
-//------------------------------------------------
         ),
         Column(
           children: [
-            CircleAvatar(
+            const CircleAvatar(
               radius: 40,
-//----------------------------------------------------------avatar
-              // backgroundImage: AssetImage(user.avatarUrl),
-              backgroundImage: (user.avatarUrl == 'Null' || user.avatarUrl.isEmpty)
-                          ? AssetImage('assets/images/default_profile.png')
-                          : FileImage(File(user.avatarUrl)) as ImageProvider,
-//---------------------------------------------------------------
+              backgroundImage: AssetImage("assets/images/valverdi.jpg"),
               backgroundColor: Colors.white,
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
-              user.name ?? 'No Name',
-              style: TextStyle(
-                color: const Color.fromARGB(255, 0, 0, 0),
+              userProfile['fullname'] ?? 'Unknown',
+              style: const TextStyle(
+                color: Color.fromARGB(255, 0, 0, 0),
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
               ),
             ),
             Text(
-              user.username ?? 'No Email',
-              style: TextStyle(color: Colors.grey),
-            ),
-            SizedBox(height: 8),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => 
-                UserDataPage()));
-              },
-              icon: Icon(Icons.edit, size: 16, color: Colors.white),
-              label: Text("Edit Profile", style: TextStyle(color: Colors.white)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color.fromARGB(255, 216, 11, 42),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              ),
+              userProfile['username'] ?? 'Unknown',
+              style: const TextStyle(color: Colors.grey),
             ),
           ],
         ),
@@ -275,11 +183,40 @@ class ProfileInfo extends StatelessWidget {
     );
   }
 }
+class VIPBanner extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.purple[100],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            "Learn more about exclusive VIP privileges",
+            style: TextStyle(color: Colors.purple, fontSize: 16),
+          ),
+          TextButton(
+            onPressed: () {},
+            style: TextButton.styleFrom(backgroundColor: const Color.fromARGB(255, 0, 0, 0)),
+            child: Text(
+              "View Now",
+              style: TextStyle(color: Colors.purple),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
 
 class StatsSection extends StatelessWidget {
-  final User user;
-  StatsSection({required this.user});
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -301,7 +238,7 @@ class StatsSection extends StatelessWidget {
       children: [
         Text(
           value,
-          style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(color: const Color.fromARGB(255, 0, 0, 0), fontSize: 20, fontWeight: FontWeight.bold),
         ),
         Text(
           label,
@@ -313,15 +250,13 @@ class StatsSection extends StatelessWidget {
 }
 
 class VIPFeatures extends StatelessWidget {
-  final User user;
-  VIPFeatures({required this.user});
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: EdgeInsets.all(16),
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 83, 26, 147),
+        color: Colors.purple[900],
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -331,7 +266,7 @@ class VIPFeatures extends StatelessWidget {
             children: [
               Text(
                 "VIP Features",
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(color: const Color.fromARGB(255, 255, 255, 255), fontSize: 18, fontWeight: FontWeight.bold),
               ),
               ElevatedButton(
                 onPressed: () {},
@@ -343,7 +278,7 @@ class VIPFeatures extends StatelessWidget {
           SizedBox(height: 16),
           _buildFeatureRow("Unlimited Services", true),
           _buildFeatureRow("Unlock More Features", true),
-          _buildFeatureRow("Promotion of 5%", true),
+          _buildFeatureRow("a khoya t9adaw liya hhh", true),
         ],
       ),
     );
@@ -357,15 +292,14 @@ class VIPFeatures extends StatelessWidget {
         children: [
           Text(
             feature,
-            style: TextStyle(color: const Color.fromARGB(255, 255, 255, 255), fontSize: 16),
+            style: TextStyle(color: Colors.grey, fontSize: 16),
           ),
           Icon(
             isAvailable ? Icons.check : Icons.close,
-            color: isAvailable ? const Color.fromARGB(255, 255, 255, 255) : const Color.fromARGB(255, 238, 72, 12),
+            color: isAvailable ? Colors.green : Colors.red,
           ),
         ],
       ),
     );
   }
 }
-

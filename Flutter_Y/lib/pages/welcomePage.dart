@@ -1,6 +1,6 @@
 import 'package:easelink/pages/how_to_use.dart';
 import 'package:flutter/material.dart';
- import 'package:easelink/pages/home.dart';
+import 'package:easelink/pages/home.dart';
 import 'package:easelink/pages/signup.dart';
 import 'package:easelink/pages/profile.dart';
 

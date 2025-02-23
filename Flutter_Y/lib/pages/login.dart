@@ -28,7 +28,13 @@ class _LogInPageState extends State<LogInPage> {
 
   //Django
   Future<void> _logIn(BuildContext context, String identifier, String password) async {
-    final url = Uri.parse('http://192.168.1.108:8000/login/');
+    if (identifier.isEmpty || password.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Please enter both identifier and password.')),
+    );
+    return;
+  }
+    final url = Uri.parse('http://127.0.0.1:8000/login/');
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -42,10 +48,8 @@ class _LogInPageState extends State<LogInPage> {
       final data = json.decode(response.body);
       final prefs = await SharedPreferences.getInstance();
       // Sauvegarder les tokens localement
-
       await prefs.setString('access_token', data['access_token']);
       await prefs.setString('refresh_token', data['refresh_token']);
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Welcome back, ${data['username']}!')),
       );
@@ -61,20 +65,7 @@ class _LogInPageState extends State<LogInPage> {
     }
   }
 
-  Future<void> getProtectedData(String accessToken) async {
-  final url = Uri.parse('http://127.0.0.1:8000/protected/');
 
-  final response = await http.get(
-    url,
-    headers: {'Authorization': 'Bearer $accessToken'},
-  );
-
-  if (response.statusCode == 200) {
-    print('Data: ${response.body}');
-  } else {
-    print('Error: ${response.statusCode}');
-  }
-}
 //Django
 
   @override

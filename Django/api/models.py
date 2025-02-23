@@ -25,9 +25,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=150, unique=True)
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=128)  # Le mot de passe est stocké de manière sécurisée
-    phone = models.CharField(max_length=15, blank=True, null=True)
+    phone = models.CharField(max_length=15, unique=True)
     address = models.CharField(max_length=255, blank=True, null=True)
     gender = models.CharField(max_length=10, choices=[('Male', 'Male'), ('Female', 'Female')])
+    person_relative_phone = models.CharField(max_length=15, blank=True, null=True)
     is_vip = models.BooleanField(default=False)
     avatarUrl = models.CharField(max_length=255, blank=True, null=True)    
     is_active = models.BooleanField(default=True)
@@ -87,10 +88,14 @@ class Link(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     provider = models.ForeignKey(Provider, on_delete=models.CASCADE)
     service = models.ForeignKey(Services, on_delete=models.CASCADE)
-    price = models.FloatField()
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
     linked_date = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=[
+        ('pending', 'pending'),
+        ('in progress', 'in progress'),
+        ('finished', 'finished')
+    ], default='pending')
 
     def __str__(self):
         return f"{self.user.username} linked to {self.provider.fullname}"
@@ -100,7 +105,7 @@ class Link(models.Model):
 class Request(models.Model):
     request_id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    service_id = models.ForeignKey(Services, on_delete=models.CASCADE)
+    service = models.ForeignKey(Services, on_delete=models.CASCADE)
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
     request_date = models.DateTimeField(auto_now_add=True)
@@ -110,60 +115,45 @@ class Request(models.Model):
         return f"{self.user.username} requested {self.service_id.service_name}"
     
 #-------------------------------------------------------------------------------------------------------------
-#Modele de note et commentaire pour le prestataire (table 7)
-class ProviderRating(models.Model):
-    rating_id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    provider = models.ForeignKey(Provider, on_delete=models.CASCADE)
-    stars = models.IntegerField(choices=[(1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')], default=1)
+#Modele de note et commentaire(table 7)
+class Evaluation(models.Model):
+    evaluation_id = models.AutoField(primary_key=True)
+    Link = models.ForeignKey(Link, on_delete=models.CASCADE)
+    rating = models.IntegerField(choices=[(1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')], default=1)
     comment = models.TextField()
-    rated_date = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.user.username} rated {self.provider.fullname}"
-    class Meta:
-        unique_together = ('user', 'provider')  # Un utilisateur ne peut noter un prestataire qu'une seule fois
-
-#Modele de note et commentaire pour le service  (table 8)
-class ServiceRating(models.Model):
-    rating_id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    Provider = models.ForeignKey(Provider, on_delete=models.CASCADE)
-    service = models.ForeignKey(Services, on_delete=models.CASCADE)
-    stars = models.IntegerField(choices=[(1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')], default=1)
-    comment = models.TextField()
-    rated_date = models.DateTimeField(auto_now_add=True)
+    evaluation_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.user.username} rated {self.service.service_name}"
 
-#Modele de reclamation (table 9)
+#Modele de reclamation (table 8)
 class Report(models.Model):
     report_id = models.AutoField(primary_key=True)
+    link = models.ForeignKey(Link, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     provider = models.ForeignKey(Provider, on_delete=models.CASCADE)
     report_text = models.TextField()
-    status = models.CharField(max_length=20, choices=[('Pending', 'Pending'),('Reviewed','Reviewed'), ('Solved', 'Solved')], default='Pending')
-    reported_date = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=[('Pending', 'Pending'),('Treated','Treated')], default='Pending')
+    report_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.user.username} reported {self.provider.fullname}"
     
 #-------------------------------------------------------------------------------------------------------------
-#Modele de paiement (table 10)
+#Modele de paiement (table 9)
 class Payment(models.Model):
     payment_id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    request_id = models.ForeignKey(Services, on_delete=models.CASCADE)
+    link = models.ForeignKey(Link, on_delete=models.CASCADE)
     price = models.FloatField()
     status = models.CharField(max_length=20, choices=[('Pending', 'Pending'), ('Paid', 'Paid'), ('Failed', 'Failed')], default='Pending')
     payment_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.username} paid {self.provider.fullname}"
+        return f"{self.user.username} paid {self.link.link_id}"
     
 #-------------------------------------------------------------------------------------------------------------
-#Modele reset password (table 11)
+#Modele reset password (table 10)
 class PasswordResetOTP(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     otp = models.CharField(max_length=6)  # Code OTP à 6 chiffres

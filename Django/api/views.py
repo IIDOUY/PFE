@@ -26,7 +26,7 @@ class UserProfileView(APIView):
 
     #Pour l'administrateur
 class UserView(APIView):
-    permission_classes = [IsAdminUser]  # Assure que l'utilisateur est authentifié
+    permission_classes = [IsAuthenticated, IsAdminUser]  # Assure que l'utilisateur est authentifié
     authentication_classes = [JWTAuthentication]  # Utilise le JWT pour l'authentification
     #lister les utilisateurs
     def get(self, request):
@@ -60,7 +60,7 @@ class UserView(APIView):
 #Views pour les prestataires
     #pour l'administrateur
 class ProviderProfileView(APIView):
-    permission_classes = [IsAdminUser]  # Assure que l'utilisateur est authentifié
+    permission_classes = [IsAuthenticated, IsAdminUser]  # Assure que l'utilisateur est authentifié
     authentication_classes = [JWTAuthentication]  # Utilise le JWT pour l'authentification
     #lister les prestataires
     def get(self, request):
@@ -124,7 +124,7 @@ class UserProviderView(APIView):
 #Views pour les categories
     #Pour l'administrateur
 class CategoryView(APIView):
-    permission_classes = [IsAdminUser]  # Assure que l'utilisateur est authentifié
+    permission_classes = [IsAuthenticated, IsAdminUser]  # Assure que l'utilisateur est authentifié
     authentication_classes = [JWTAuthentication]  # Utilise le JWT pour l'authentification
     #lister les categories
     def get(self, request):
@@ -180,7 +180,7 @@ class UserCategoryView(APIView):
 #Views pour les services
     #Pour l'administrateur
 class ServicesView(APIView):
-    permission_classes = [IsAdminUser]  # Assure que l'utilisateur est authentifié
+    permission_classes = [IsAuthenticated, IsAdminUser]  # Assure que l'utilisateur est authentifié
     authentication_classes = [JWTAuthentication]  # Utilise le JWT pour l'authentification
     #lister les services
     def get(self, request):
@@ -223,7 +223,7 @@ class UserServicesView(APIView):
 #Views pour les demandes de service (requests)
     #Pour l'administrateur
 class RequestView(APIView):
-    permission_classes = [IsAdminUser]  # Assure que l'utilisateur est authentifié
+    permission_classes = [IsAuthenticated, IsAdminUser]  # Assure que l'utilisateur est authentifié
     authentication_classes = [JWTAuthentication]  # Utilise le JWT pour l'authentification
     #lister les demandes
     def get(self, request):

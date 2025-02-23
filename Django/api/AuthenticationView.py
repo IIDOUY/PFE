@@ -30,11 +30,35 @@ class SignUpView(APIView):
                 "refresh_token": str(refresh)
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    def get(self, request):
-        users = User.objects.all()  # Récupérer tous les utilisateurs
-        serializer = UserSerializer(users, many=True)  # Sérialiser les données
-        return Response(serializer.data, status=status.HTTP_200_OK)
+
+#AdminloginView
+class AdminLoginView(APIView):
+    permission_classes = [AllowAny]  # Tout le monde peut tenter de se connecter
+
+    def post(self, request):
+        identifier = request.data.get('identifier')  # Peut être email ou username
+        password = request.data.get('password')
+
+        try:
+            user = User.objects.filter(email=identifier).first() or User.objects.filter(username=identifier).first()
+
+            if user and check_password(password, user.password):
+                if not user.is_staff:  # Vérifie si l'utilisateur est admin
+                    return Response({"error": "Access denied. Admins only."}, status=status.HTTP_403_FORBIDDEN)
+
+                refresh = RefreshToken.for_user(user)
+                return Response({
+                    "message": "Admin login successful!",
+                    "username": user.username,
+                    "email": user.email,
+                    "access_token": str(refresh.access_token),
+                    "refresh_token": str(refresh),
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({"error": "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 
 #LoginView    
 class LogiInView(APIView):

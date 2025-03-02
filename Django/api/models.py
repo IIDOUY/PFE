@@ -28,7 +28,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     phone = models.CharField(max_length=15, unique=True)
     address = models.CharField(max_length=255, blank=True, null=True)
     gender = models.CharField(max_length=10, choices=[('Male', 'Male'), ('Female', 'Female')])
-    person_relative_phone = models.CharField(max_length=15, blank=True, null=True)
+    person_relative_phone = models.CharField(max_length=15, default='')
     is_vip = models.BooleanField(default=False)
     avatarUrl = models.CharField(max_length=255, blank=True, null=True)    
     is_active = models.BooleanField(default=True)
@@ -44,24 +44,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.username
-
-#Modele de prestataire du service (table 2)
-class Provider(models.Model):
-    fullname = models.CharField(max_length=150)
-    email = models.EmailField(unique=True)
-    gender = models.CharField(max_length=10, choices=[('Male', 'Male'), ('Female', 'Female')])
-    phone = models.CharField(max_length=15, blank=True, null=True)
-    address = models.CharField(max_length=255, blank=True)
-    services = models.CharField(max_length=255)
-    is_disponible = models.BooleanField(default=True)
-    rating_avg = models.FloatField(default=0)
-    added_date = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.fullname
-
 #-------------------------------------------------------------------------------------------------------------
-#Modele de categorie de services (table 3)
+#Modele de categorie de services (table 2)
 class Category(models.Model):
     category_id = models.AutoField(primary_key=True)
     category_name = models.CharField(max_length=255)
@@ -70,7 +54,7 @@ class Category(models.Model):
     def __str__(self):
         return self.category_name
     
-#Modele de services (table 4)
+#Modele de services (table 3)
 class Services(models.Model):
     service_id = models.AutoField(primary_key=True)
     service_name = models.CharField(max_length=255)
@@ -81,6 +65,21 @@ class Services(models.Model):
 
     def __str__(self):
         return self.service_name
+
+#Modele de prestataire du service (table 4)
+class Provider(models.Model):
+    fullname = models.CharField(max_length=150)
+    email = models.EmailField(unique=True)
+    gender = models.CharField(max_length=10, choices=[('Male', 'Male'), ('Female', 'Female')])
+    phone = models.CharField(max_length=15, blank=True, null=True)
+    address = models.CharField(max_length=255, blank=True)
+    service = models.ForeignKey(Services, on_delete=models.CASCADE, default='1')
+    is_disponible = models.BooleanField(default=True)
+    rating_avg = models.FloatField(default=0)
+    added_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.fullname
 
 #Modele de link entre utilisateur et prestataire (table 5)
 class Link(models.Model):
@@ -118,7 +117,7 @@ class Request(models.Model):
 #Modele de note et commentaire(table 7)
 class Evaluation(models.Model):
     evaluation_id = models.AutoField(primary_key=True)
-    Link = models.ForeignKey(Link, on_delete=models.CASCADE)
+    link = models.ForeignKey(Link, on_delete=models.CASCADE)
     rating = models.IntegerField(choices=[(1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')], default=1)
     comment = models.TextField()
     evaluation_date = models.DateTimeField(auto_now_add=True)

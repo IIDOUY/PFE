@@ -1,6 +1,6 @@
 from django.urls import path
 from .AuthenticationView import SignUpView, LogiInView, LogoutView, SendResetOTPView, VerifyResetOTPView, ResetPasswordView, AdminLoginView
-from .views import UserProfileView, ProviderProfileView, CategoryView, ServicesView, RequestView, UserRequestView, UserView, UserServicesView, UserCategoryView, UserProviderView
+from .views import UserProfileView, CategoryView, ServicesView, RequestView, UserRequestView, UserView, UserServicesView, UserCategoryView, UserProviderView, ProviderProfileView, ProviderView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -22,7 +22,8 @@ urlpatterns = [
     path('users/', UserView.as_view(), name='users'), #exemple:http://
     #-------------------------------------------------------------------------------------------------
     #Endpoint pour la recuperation/ajout/modification/suppression  des prestataires
-    path('providers/', ProviderProfileView.as_view(), name='providers'), #exemple:http://127.0.0.1:8000/providers/?name=Mohamed Dreuiche
+    path('providers/', ProviderProfileView.as_view(), name='providers'), #exemple:http://127.0.0.1:8000/providers/?query=Mohamed Dreuiche
+    path('provider/', ProviderView.as_view(), name='provider'), #exemple:http://
     path('user-providers/', UserProviderView.as_view(), name='user_providers'),
     #-------------------------------------------------------------------------------------------------
     #Endpoint pour la recuperation/ajout/suppression des categories pour l'administateur

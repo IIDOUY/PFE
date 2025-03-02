@@ -1,9 +1,11 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import UserSerializer, ProviderSerializer, CategorySerializer, ServicesSerializer, RequestSerializer
+from .serializers import UserSerializer, CategorySerializer, ServicesSerializer, RequestSerializer, ProviderSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from .models import Provider, User, Category, Services, Request
+from .models import  User, Category, Services, Request, Provider
+from django.db import models
+from django.db.models import Q
 
 #Views pour les utilisateurs (beneficiaires)
     #Pour l'utilisateur connecté
@@ -74,17 +76,19 @@ class ProviderProfileView(APIView):
     authentication_classes = [JWTAuthentication]  # Utilise le JWT pour l'authentification
     #lister les prestataires
     def get(self, request):
-        provider_id = request.query_params.get('id', None)
-        provider_name = request.query_params.get('name', None)
+        search_query = request.query_params.get('query', None)  # Un seul paramètre pour la recherche
 
-        # Filtrer en fonction des paramètres fournis
-        filters = {}
-        if provider_id:
-            filters['id'] = provider_id
-        if provider_name:
-            filters['fullname__icontains'] = provider_name  # Recherche insensible à la casse
+        if not search_query:
+            providers = Provider.objects.all()
 
-        providers = Provider.objects.filter(**filters)
+        else:
+            providers = Provider.objects.filter(
+                models.Q(fullname__icontains=search_query) |  # Recherche par nom
+                models.Q(service__service_name__icontains=search_query) |  # Recherche par service
+                models.Q(email__iexact=search_query) |  # Recherche exacte sur l'email
+                models.Q(phone__iexact=search_query)  # Recherche exacte sur le téléphone
+            )
+
         serializer = ProviderSerializer(providers, context={'request': request}, many=True)
         return Response(serializer.data, status=200)
     #ajouter un prestataire
@@ -110,24 +114,46 @@ class ProviderProfileView(APIView):
         provider = Provider.objects.get(id=provider_id)
         provider.delete()
         return Response(status=204)
-    
+
+class ProviderView(APIView):
+    permission_classes = [IsAuthenticated,  IsAdminUser]  # Assure que l'utilisateur est authentifié
+    authentication_classes = [JWTAuthentication]  # Utilise le JWT pour l'authentification
+
+    def get(self, request):
+        provider_id = request.query_params.get('id', None)
+
+        # Filtrer en fonction des paramètres fournis
+        filters = {}
+        if provider_id:
+            filters['id'] = provider_id
+
+        providers = Provider.objects.filter(**filters)
+        serializer = ProviderSerializer(providers, context={'request': request}, many=True)
+        return Response(serializer.data, status=200)
+
     #pour l'utilisateur connecté
 class UserProviderView(APIView):
     permission_classes = [IsAuthenticated]  # Assure que l'utilisateur est authentifié
     authentication_classes = [JWTAuthentication]  # Utilise le JWT pour l'authentification
     #lister les prestataires
     def get(self, request):
-        provider_id = request.query_params.get('id', None)
-        provider_name = request.query_params.get('name', None)
+        search_query = request.query_params.get('query', None)  # Un seul paramètre pour la recherche
 
-        # Filtrer en fonction des paramètres fournis
-        filters = {}
-        if provider_id:
-            filters['id'] = provider_id
-        if provider_name:
-            filters['fullname__icontains'] = provider_name  # Recherche insensible à la casse
+        if not search_query:
+            providers = Provider.objects.all()
 
-        providers = Provider.objects.filter(**filters)
+        else:
+            try:
+                provider_id = int(search_query)
+                providers = Provider.objects.filter(id=provider_id)
+            except ValueError:
+                providers = Provider.objects.filter(
+                    models.Q(fullname__icontains=search_query) |  # Recherche par nom
+                    models.Q(service__service_name__icontains=search_query) |  # Recherche par service
+                    models.Q(email__iexact=search_query) |  # Recherche exacte sur l'email
+                    models.Q(phone__iexact=search_query)  # Recherche exacte sur le téléphone
+                )
+
         serializer = ProviderSerializer(providers, context={'request': request}, many=True)
         return Response(serializer.data, status=200)
 #------------------------------------------------------------------------------------------------- 
@@ -138,18 +164,22 @@ class CategoryView(APIView):
     authentication_classes = [JWTAuthentication]  # Utilise le JWT pour l'authentification
     #lister les categories
     def get(self, request):
-        category_id = request.query_params.get('id', None)
-        category_name = request.query_params.get('name', None)
+        search_query = request.query_params.get('query', None)  # Un seul paramètre pour la recherche
 
-        # Filtrer en fonction des paramètres fournis
-        filters = {}
-        if category_id:
-            filters['category_id'] = category_id
-        if category_name:
-            filters['category_name__icontains'] = category_name  # Recherche insensible à la casse
+        if not search_query:
+            categories = Category.objects.all()
 
-        categories = Category.objects.filter(**filters)
-        serializer = CategorySerializer(categories, context = {'request': request}, many = True)  
+        else:
+            try:
+                category_id = int(search_query)
+                categories = Category.objects.filter(category_id=category_id)
+            except ValueError:
+                categories = Category.objects.filter(
+                    models.Q(category_name__icontains=search_query) |  # Recherche par nom
+                    models.Q(category_description__icontains=search_query)   # Recherche par service
+                )
+
+        serializer = CategorySerializer(categories, context={'request': request}, many=True)
         return Response(serializer.data, status=200)
     #ajouter une categorie
     def post(self, request):
@@ -172,18 +202,22 @@ class UserCategoryView(APIView):
     authentication_classes = [JWTAuthentication]  # Utilise le JWT pour l'authentification
     #lister les categories
     def get(self, request):
-        category_id = request.query_params.get('id', None)
-        category_name = request.query_params.get('name', None)
+        search_query = request.query_params.get('query', None)  # Un seul paramètre pour la recherche
 
-        # Filtrer en fonction des paramètres fournis
-        filters = {}
-        if category_id:
-            filters['category_id'] = category_id
-        if category_name:
-            filters['category_name__icontains'] = category_name  # Recherche insensible à la casse
+        if not search_query:
+            categories = Category.objects.all()
 
-        categories = Category.objects.filter(**filters)
-        serializer = CategorySerializer(categories, context = {'request': request}, many = True)  
+        else:
+            try:
+                category_id = int(search_query)
+                categories = Category.objects.filter(category_id=category_id)
+            except ValueError:
+                categories = Category.objects.filter(
+                    models.Q(category_name__icontains=search_query) |  # Recherche par nom
+                    models.Q(category_description__icontains=search_query)   # Recherche par service
+                )
+
+        serializer = CategorySerializer(categories, context={'request': request}, many=True)
         return Response(serializer.data, status=200)
 
 #------------------------------------------------------------------------------------------------- 
@@ -194,16 +228,24 @@ class ServicesView(APIView):
     authentication_classes = [JWTAuthentication]  # Utilise le JWT pour l'authentification
     #lister les services
     def get(self, request):
-        service_id = request.query_params.get('id', None)
-        service_name = request.query_params.get('name', None)
-        # Filtrer en fonction des paramètres fournis
-        filters = {}
-        if service_id:
-            filters['service_id'] = service_id
-        if service_name:
-            filters['service_name__icontains'] = service_name  # Recherche insensible à la casse
-        services = Services.objects.filter(**filters)
-        serializer = ServicesSerializer(services, context = {'request': request}, many = True)  
+        search_query = request.query_params.get('query', None)  # Un seul paramètre pour la recherche
+
+        if not search_query:
+            services = Services.objects.all()
+
+        else:
+            filters = Q(service_name__icontains=search_query) | Q(service_description__icontains=search_query) | Q(category__category_name__icontains=search_query)
+
+            try:
+                # Convertir la requête en float si possible (pour la recherche de prix exact)
+                price_value = float(search_query)
+                filters |= Q(service_price=price_value)
+            except ValueError:
+                pass  # Ignore si ce n'est pas un nombre valide
+
+            services = Services.objects.filter(filters)
+
+        serializer = ServicesSerializer(services, context={'request': request}, many=True)
         return Response(serializer.data, status=200)
     #ajouter un service
     def post(self, request):
@@ -226,16 +268,24 @@ class UserServicesView(APIView):
     authentication_classes = [JWTAuthentication]  # Utilise le JWT pour l'authentification
     #lister les services
     def get(self, request):
-        service_id = request.query_params.get('id', None)
-        service_name = request.query_params.get('name', None)
-        # Filtrer en fonction des paramètres fournis
-        filters = {}
-        if service_id:
-            filters['service_id'] = service_id
-        if service_name:
-            filters['service_name__icontains'] = service_name  # Recherche insensible à la casse
-        services = Services.objects.filter(**filters)
-        serializer = ServicesSerializer(services, context = {'request': request}, many = True)  
+        search_query = request.query_params.get('query', None)  # Un seul paramètre pour la recherche
+
+        if not search_query:
+            services = Services.objects.all()
+
+        else:
+            filters = Q(service_name__icontains=search_query) | Q(service_description__icontains=search_query) | Q(category__category_name__icontains=search_query)
+
+            try:
+                # Convertir la requête en float si possible (pour la recherche de prix exact)
+                price_value = float(search_query)
+                filters |= Q(service_price=price_value)
+            except ValueError:
+                pass  # Ignore si ce n'est pas un nombre valide
+
+            services = Services.objects.filter(filters)
+
+        serializer = ServicesSerializer(services, context={'request': request}, many=True)
         return Response(serializer.data, status=200)
 #-------------------------------------------------------------------------------------------------
 #Views pour les demandes de service (requests)

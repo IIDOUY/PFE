@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Provider, Category, Services, Link, Request, Evaluation, Report
+from .models import User, Category, Services, Link, Request, Evaluation, Report, Provider
 from django.contrib.auth.hashers import make_password
 import re
 
@@ -16,11 +16,15 @@ class UserSerializer(serializers.ModelSerializer):
     
     def validate_fullname(self, value):
         """Vérifie que le fullname ne contient que des lettres et des espaces."""
+        if not value:  # Vérifie si la valeur est None ou vide
+            raise serializers.ValidationError("Fullname is required.")
         if not re.match(r'^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$', value):
             raise serializers.ValidationError("Le nom complet ne doit contenir que des lettres et des espaces.")
         return value
 
     def validate_username(self, value):
+        if not value:  # Vérifie si la valeur est None ou vide
+            raise serializers.ValidationError("Username is required.")
         if len(value) < 5:
             raise serializers.ValidationError("Username must be at least 5 characters long.")
         if not re.match(r'^[A-Za-z0-9_.]+$', value):
@@ -28,11 +32,15 @@ class UserSerializer(serializers.ModelSerializer):
         return value
 
     def validate_password(self, value):
+        if not value:  # Vérifie si la valeur est None ou vide
+            raise serializers.ValidationError("password is required.")
         if len(value) < 8:
             raise serializers.ValidationError("Password must be at least 8 characters long.")
         return value    
 
     def validate_phone(self, value):
+        if not value:  # Vérifie si la valeur est None ou vide
+            raise serializers.ValidationError("Phone is required.")
         """Vérifie que le numéro de téléphone est valide."""
         if not re.match(r'^\+?\d{9,15}$', value):
             raise serializers.ValidationError("Le numéro de téléphone doit contenir uniquement des chiffres et peut commencer par '+'.")
@@ -53,7 +61,7 @@ class UserSerializer(serializers.ModelSerializer):
 class ProviderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Provider
-        fields = ['id', 'fullname', 'email','gender', 'phone', 'address', 'services', 'is_disponible', 'rating_avg']
+        fields = ['id', 'fullname', 'email','gender', 'phone', 'address', 'service', 'is_disponible', 'rating_avg']
         extra_kwargs = {
             'id': {'read_only': True}
         }

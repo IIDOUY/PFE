@@ -74,9 +74,11 @@ class CategorySerializer(serializers.ModelSerializer):
 
 #Services Serializer
 class ServicesSerializer(serializers.ModelSerializer):
+    service_image = serializers.ImageField(required=False)
+    
     class Meta:
         model = Services
-        fields = ['service_id', 'service_name', 'service_description', 'service_price', 'category']
+        fields = ['service_id', 'service_name', 'service_description', 'service_price', 'category', 'service_image']
 
 #Request Serializer
 class RequestSerializer(serializers.ModelSerializer):

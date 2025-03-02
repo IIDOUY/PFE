@@ -6,6 +6,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from .models import  User, Category, Services, Request, Provider
 from django.db import models
 from django.db.models import Q
+from rest_framework.parsers import MultiPartParser, FormParser
 
 #Views pour les utilisateurs (beneficiaires)
     #Pour l'utilisateur connecté
@@ -226,6 +227,8 @@ class UserCategoryView(APIView):
 class ServicesView(APIView):
     permission_classes = [IsAuthenticated, IsAdminUser]  # Assure que l'utilisateur est authentifié
     authentication_classes = [JWTAuthentication]  # Utilise le JWT pour l'authentification
+    parser_classes = [MultiPartParser, FormParser]
+
     #lister les services
     def get(self, request):
         search_query = request.query_params.get('query', None)  # Un seul paramètre pour la recherche
@@ -266,6 +269,8 @@ class ServicesView(APIView):
 class UserServicesView(APIView):
     permission_classes = [IsAuthenticated]  # Assure que l'utilisateur est authentifié
     authentication_classes = [JWTAuthentication]  # Utilise le JWT pour l'authentification
+    parser_classes = [MultiPartParser, FormParser]
+    
     #lister les services
     def get(self, request):
         search_query = request.query_params.get('query', None)  # Un seul paramètre pour la recherche

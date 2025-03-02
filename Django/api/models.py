@@ -61,6 +61,7 @@ class Services(models.Model):
     service_description = models.TextField()
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
     service_price = models.FloatField()
+    service_image = models.ImageField(upload_to='service_images/', default='service_images/default.png') 
 
 
     def __str__(self):

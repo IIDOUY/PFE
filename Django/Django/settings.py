@@ -50,6 +50,7 @@ ALLOWED_HOSTS = ['192.168.1.108', 'localhost', '127.0.0.1']
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -64,8 +65,23 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework_simplejwt.token_blacklist',
     'drf_yasg',
+    'channels',
     
 ]
+#added by me
+# Configuration ASGI pour Django Channels
+ASGI_APPLICATION = 'Django.asgi.application'
+# Configuration Redis (utilisé comme backend pour WebSockets)
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",  # Pour le dev (pas besoin de Redis)
+        # En prod, utilise Redis :
+        # "BACKEND": "channels_redis.core.RedisChannelLayer",
+        # "CONFIG": {
+        #     "hosts": [("127.0.0.1", 6379)],
+        # },
+    },
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

@@ -1,12 +1,15 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import UserSerializer, CategorySerializer, ServicesSerializer, RequestSerializer, ProviderSerializer
+from .serializers import UserSerializer, CategorySerializer, ServicesSerializer, RequestSerializer, ProviderSerializer, NotificationSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from .models import  User, Category, Services, Request, Provider
 from django.db import models
 from django.db.models import Q
 from rest_framework.parsers import MultiPartParser, FormParser
+from .models import Notification, create_notification
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync  
 
 #Views pour les utilisateurs (beneficiaires)
     #Pour l'utilisateur connecté
@@ -327,7 +330,8 @@ class RequestView(APIView):
         request.delete()
         return Response(status=204)
     
-    #Pour l'utilisateur connecté
+#Pour l'utilisateur connecté
+from django.shortcuts import get_object_or_404
 class UserRequestView(APIView):
     permission_classes = [IsAuthenticated]  # Assure que l'utilisateur est authentifié
     authentication_classes = [JWTAuthentication]  # Utilise le JWT pour l'authentification
@@ -338,16 +342,27 @@ class UserRequestView(APIView):
         return Response(serializer.data, status=200)
     #ajouter une demande
     def post(self, request):
-        serializer = RequestSerializer(data=request.data, context = {'request': request})
+        serializer = RequestSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            serializer.save(user = request.user)
+            serializer.save(user=request.user)
+        
+            # Récupérer l'objet Service à partir de l'ID
+            service_id = request.data['service']
+            service = get_object_or_404(Services, service_id=service_id)  # Récupère le service ou renvoie une 404 si non trouvé
+        
+            # ✅ Envoi d'une notification à l'admin
+            admin_users = User.objects.filter(is_superuser=True)
+            for admin in admin_users:
+                create_notification(admin, f"{request.user.username} a demandé le service de {service.service_name}.")
+
+            send_realtime_notification(f"{request.user.username} a demandé le service de {service.service_name}.")
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
     #modifier une demande
     def put(self, request):
         request_id = request.query_params.get('id', None)
-        request = Request.objects.get(request_id=request_id)
-        serializer = RequestSerializer(request, data=request.data, partial=True, context={'request': request})
+        user_request = Request.objects.get(request_id=request_id)
+        serializer = RequestSerializer(user_request, data=request.data, partial=True, context={'request': request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=200)
@@ -359,3 +374,27 @@ class UserRequestView(APIView):
         request.delete()
         return Response(status=204)
 #-------------------------------------------------------------------------------------------------
+#View pour les notifications
+class NotificationView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+
+    def get(self, request):
+        notifications = Notification.objects.filter(user=request.user, is_read=False).order_by('-notification_date')
+        serializer = NotificationSerializer(notifications, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        """Marquer toutes les notifications comme lues"""
+        Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+        return Response({"message": "Notifications marked as read."})
+
+def send_realtime_notification(message):
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        "notifications",  # Groupe WebSocket
+        {
+            "type": "send_notification",
+            "message": message
+        }
+    )

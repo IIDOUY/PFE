@@ -1,0 +1,228 @@
+[
+    {
+        "category_name": "Home care",
+        "category_description": "Cleaning whatever and whenever you want."
+    },
+    {
+        "category_name": "Plomberie",
+        "category_description": "Services de plomberie pour réparations et installations."
+    },
+    {
+        "category_name": "Électricité",
+        "category_description": "Services d'électricité pour installations et réparations."
+    },
+    {
+        "category_name": "Jardinage",
+        "category_description": "Services de jardinage pour l'entretien des espaces verts."
+    },
+    {
+        "category_name": "Nettoyage",
+        "category_description": "Services de nettoyage résidentiel et commercial."
+    },
+    {
+        "category_name": "Garde d'enfants",
+        "category_description": "Services de garde d'enfants à domicile."
+    },
+    {
+        "category_name": "Réparation automobile",
+        "category_description": "Services de réparation et d'entretien de véhicules."
+    },
+    {
+        "category_name": "Design d'intérieur",
+        "category_description": "Services de conception et d'aménagement d'espaces intérieurs."
+    },
+    {
+        "category_name": "Cours particuliers",
+        "category_description": "Services de soutien scolaire et de cours particuliers."
+    },
+    {
+        "category_name": "Coiffure et beauté",
+        "category_description": "Services de coiffure, maquillage et soins de beauté."
+    },
+    {
+        "category_name": "Déménagement",
+        "category_description": "Services de déménagement pour particuliers et professionnels."
+    },
+    {
+        "category_name": "Informatique et tech",
+        "category_description": "Services de réparation et d'assistance informatique."
+    },
+    {
+        "category_name": "Événementiel",
+        "category_description": "Organisation et gestion d'événements privés ou professionnels."
+    },
+    {
+        "category_name": "Cuisine et traiteur",
+        "category_description": "Services de cuisine à domicile et de traiteur pour événements."
+    },
+    {
+        "category_name": "Santé et bien-être",
+        "category_description": "Services de soins à domicile, massages et bien-être."
+    }
+]
+
+[
+    {
+        "service_name": "Ménage",
+        "service_description": "Service de nettoyage complet de votre maison ou appartement.",
+        "service_price": 250.0,
+        "category": 2  // Référence à une catégorie existante (ex: Nettoyage)
+    },
+    {
+        "service_name": "Réparation de fuite d'eau",
+        "service_description": "Réparation rapide et efficace des fuites d'eau.",
+        "service_price": 150.0,
+        "category": 3  // Référence à une catégorie existante (ex: Plomberie)
+    },
+    {
+        "service_name": "Installation électrique",
+        "service_description": "Installation de circuits électriques sécurisés.",
+        "service_price": 200.0,
+        "category": 4  // Référence à une catégorie existante (ex: Électricité)
+    },
+    {
+        "service_name": "Tonte de pelouse",
+        "service_description": "Tonte et entretien de votre pelouse.",
+        "service_price": 100.0,
+        "category": 5  // Référence à une catégorie existante (ex: Jardinage)
+    },
+    {
+        "service_name": "Garde d'enfants",
+        "service_description": "Garde d'enfants à domicile pour parents occupés.",
+        "service_price": 20.0,
+        "category": 6  // Référence à une catégorie existante (ex: Garde d'enfants)
+    },
+    {
+        "service_name": "Réparation de voiture",
+        "service_description": "Réparation et entretien de véhicules.",
+        "service_price": 300.0,
+        "category": 7  // Référence à une catégorie existante (ex: Réparation automobile)
+    },
+    {
+        "service_name": "Design d'intérieur",
+        "service_description": "Conception et aménagement d'espaces intérieurs.",
+        "service_price": 500.0,
+        "category": 8  // Référence à une catégorie existante (ex: Design d'intérieur)
+    },
+    {
+        "service_name": "Cours de mathématiques",
+        "service_description": "Cours particuliers de mathématiques pour tous niveaux.",
+        "service_price": 30.0,
+        "category": 9  // Référence à une catégorie existante (ex: Cours particuliers)
+    },
+    {
+        "service_name": "Coiffure à domicile",
+        "service_description": "Service de coiffure à domicile pour hommes et femmes.",
+        "service_price": 50.0,
+        "category": 10  // Référence à une catégorie existante (ex: Coiffure et beauté)
+    },
+    {
+        "service_name": "Déménagement résidentiel",
+        "service_description": "Service de déménagement pour particuliers.",
+        "service_price": 400.0,
+        "category": 11  // Référence à une catégorie existante (ex: Déménagement)
+    }
+]
+
+[
+    {
+        "fullname": "Yassine Ayoubi",
+        "email": "ayoubi@gmail.com",
+        "gender": "Male",
+        "phone": "0630258716",
+        "address": "Tarrasst Agadir",
+        "service": 3,  // Référence à un service existant (ex: Installation électrique)
+        "is_disponible": true,
+        "rating_avg": 3.0
+    },
+    {
+        "fullname": "Fatima Zahra",
+        "email": "fatima.zahra@example.com",
+        "gender": "Female",
+        "phone": "0623456789",
+        "address": "Hay Salam, Casablanca",
+        "service": 1,  // Référence à un service existant (ex: Ménage)
+        "is_disponible": false,
+        "rating_avg": 4.5
+    },
+    {
+        "fullname": "Karim El Mansouri",
+        "email": "karim.mansouri@example.com",
+        "gender": "Male",
+        "phone": "0612345678",
+        "address": "Avenue Hassan II, Rabat",
+        "service": 2,  // Référence à un service existant (ex: Réparation de fuite d'eau)
+        "is_disponible": true,
+        "rating_avg": 4.0
+    },
+    {
+        "fullname": "Amina Belkadi",
+        "email": "amina.belkadi@example.com",
+        "gender": "Female",
+        "phone": "0656789123",
+        "address": "Quartier Palmier, Marrakech",
+        "service": 4,  // Référence à un service existant (ex: Jardinage)
+        "is_disponible": true,
+        "rating_avg": 4.7
+    },
+    {
+        "fullname": "Mehdi El Fassi",
+        "email": "mehdi.elfassi@example.com",
+        "gender": "Male",
+        "phone": "0667891234",
+        "address": "Rue Mohammed V, Fès",
+        "service": 5,  // Référence à un service existant (ex: Garde d'enfants)
+        "is_disponible": false,
+        "rating_avg": 3.8
+    },
+    {
+        "fullname": "Leila Benjelloun",
+        "email": "leila.benjelloun@example.com",
+        "gender": "Female",
+        "phone": "0678912345",
+        "address": "Boulevard Moulay Youssef, Tanger",
+        "service": 6,  // Référence à un service existant (ex: Réparation automobile)
+        "is_disponible": true,
+        "rating_avg": 4.2
+    },
+    {
+        "fullname": "Omar El Amrani",
+        "email": "omar.amrani@example.com",
+        "gender": "Male",
+        "phone": "0689123456",
+        "address": "Avenue des FAR, Oujda",
+        "service": 7,  // Référence à un service existant (ex: Design d'intérieur)
+        "is_disponible": true,
+        "rating_avg": 4.9
+    },
+    {
+        "fullname": "Nadia El Khayat",
+        "email": "nadia.khayat@example.com",
+        "gender": "Female",
+        "phone": "0691234567",
+        "address": "Rue Ibn Tachfine, Meknès",
+        "service": 8,  // Référence à un service existant (ex: Cours particuliers)
+        "is_disponible": false,
+        "rating_avg": 4.1
+    },
+    {
+        "fullname": "Hassan El Ouazzani",
+        "email": "hassan.ouazzani@example.com",
+        "gender": "Male",
+        "phone": "0601234567",
+        "address": "Avenue Mohammed VI, El Jadida",
+        "service": 9,  // Référence à un service existant (ex: Coiffure et beauté)
+        "is_disponible": true,
+        "rating_avg": 4.6
+    },
+    {
+        "fullname": "Sara El Filali",
+        "email": "sara.filali@example.com",
+        "gender": "Female",
+        "phone": "0612345678",
+        "address": "Rue Moulay Ismail, Salé",
+        "service": 10,  // Référence à un service existant (ex: Déménagement)
+        "is_disponible": true,
+        "rating_avg": 4.3
+    }
+]

@@ -1,6 +1,6 @@
 from django.urls import path
 from .AuthenticationView import SignUpView, LogiInView, LogoutView, SendResetOTPView, VerifyResetOTPView, ResetPasswordView, AdminLoginView
-from .views import UserProfileView, CategoryView, ServicesView, RequestView, UserRequestView, UserView, UserServicesView, UserCategoryView, UserProviderView, ProviderProfileView, ProviderView
+from .views import UserProfileView, CategoryView, ServicesView, RequestView, UserRequestView, UserView, UserServicesView, UserCategoryView, UserProviderView, ProviderProfileView, ProviderView, NotificationView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -48,7 +48,10 @@ urlpatterns = [
     # Les endpoints pour reset password
     path('password-reset/send-otp/', SendResetOTPView.as_view(), name='send_reset_otp'),
     path('password-reset/verify-otp/', VerifyResetOTPView.as_view(), name='verify_reset_otp'),
-    path('password-reset/reset/', ResetPasswordView.as_view(), name='reset_password'),  
+    path('password-reset/reset/', ResetPasswordView.as_view(), name='reset_password'), 
+    #-------------------------------------------------------------------------------------------------
+    # Les endpoints pour les notifications
+    path('notifications/', NotificationView.as_view(), name='notifications'), 
 ]
 
 

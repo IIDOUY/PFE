@@ -112,7 +112,7 @@ class Request(models.Model):
     request_status = models.CharField(max_length=20, choices=[('Pending', 'Pending'), ('Accepted', 'Accepted'), ('Rejected', 'Rejected')], default='Pending')
 
     def __str__(self):
-        return f"{self.user.username} requested {self.service_id.service_name}"
+        return f"{self.user.username} requested {self.service.service_name}"
     
 #-------------------------------------------------------------------------------------------------------------
 #Modele de note et commentaire(table 7)
@@ -166,3 +166,18 @@ class PasswordResetOTP(models.Model):
 
     def __str__(self):
         return f"OTP for {self.user.email}"
+    
+#Modele de notification (table 11)
+class Notification(models.Model):
+    notification_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    notification_text = models.TextField()
+    notification_date = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.user.username} received a notification"
+#fonction de notification  
+def create_notification(user, message):
+    Notification.objects.create(user=user, notification_text=message)
+    print(f"✅ Notification envoyée à {user.username}: {message}")

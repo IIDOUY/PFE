@@ -1,7 +1,8 @@
 from rest_framework import serializers
-from .models import User, Category, Services, Link, Request, Evaluation, Report, Provider
+from .models import User, Category, Services, Link, Request, Evaluation, Report, Provider, Notification
 from django.contrib.auth.hashers import make_password
 import re
+from datetime import datetime
 
 #User Serializer
 class UserSerializer(serializers.ModelSerializer):  
@@ -81,14 +82,28 @@ class ServicesSerializer(serializers.ModelSerializer):
         fields = ['service_id', 'service_name', 'service_description', 'service_price', 'category', 'service_image']
 
 #Request Serializer
+import pytz
 class RequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = Request
-        fields = ['request_id', 'user', 'provider', 'service', 'price', 'start_date', 'end_date', 'request_date', 'status']
+        fields = ['request_id', 'user', 'service', 'start_date', 'end_date', 'request_date', 'request_status']
+        read_only_fields = ['user']
 
     def validate_end_date(self, value):
-        if self.initial_data['start_date'] > value:
-            raise serializers.ValidationError("La date de fin doit être postérieure à la date de début.")
+        start_date_str = self.initial_data.get('start_date')
+        if start_date_str:
+            try:
+                # Convertir la chaîne en datetime naive
+                start_date = datetime.strptime(start_date_str, '%Y-%m-%d %H:%M:%S')
+                # Rendre start_date "aware" en ajoutant un fuseau horaire (par exemple, UTC)
+                start_date = start_date.replace(tzinfo=pytz.UTC)
+                # Si value est naive, le rendre "aware"
+                if value.tzinfo is None:
+                    value = value.replace(tzinfo=pytz.UTC)
+                if start_date > value:
+                    raise serializers.ValidationError("La date de fin doit être postérieure à la date de début.")
+            except ValueError:
+                raise serializers.ValidationError("Format de date invalide pour 'start_date'. Utilisez le format 'YYYY-MM-DD HH:MM:SS'.")
         return value
     
 #Link Serializer
@@ -101,3 +116,21 @@ class LinkSerializer(serializers.ModelSerializer):
         if self.initial_data['start_date'] > value:
             raise serializers.ValidationError("La date de fin doit être postérieure à la date de début.")
         return value
+
+#Evaluation Serializer
+class EvaluationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Evaluation
+        fields = ['evaluation_id', 'user', 'provider', 'service', 'evaluation_date', 'rating', 'comment']
+
+#Report Serializer
+class ReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Report
+        fields = ['report_id', 'user', 'provider', 'service', 'report_date', 'reason']
+
+#Notification Serializer
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['notification_id', 'user', 'notification_date', 'notification_text', 'is_read']

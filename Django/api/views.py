@@ -1,9 +1,9 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import UserSerializer, CategorySerializer, ServicesSerializer, RequestSerializer, ProviderSerializer, NotificationSerializer
+from .serializers import UserSerializer, CategorySerializer, ServicesSerializer, RequestSerializer, ProviderSerializer, NotificationSerializer, LinkSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from .models import  User, Category, Services, Request, Provider
+from .models import  User, Category, Services, Request, Provider, Link, Notification
 from django.db import models
 from django.db.models import Q
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -372,6 +372,40 @@ class UserRequestView(APIView):
         request_id = request.query_params.get('id', None)
         request = Request.objects.get(request_id=request_id)
         request.delete()
+        return Response(status=204)
+    
+#Views pour links
+    #Pour l'administrateur
+class LinkView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminUser]  # Assure que l'utilisateur est authentifié
+    authentication_classes = [JWTAuthentication]  # Utilise le JWT pour l'authentification
+    #lister les links
+    def get(self, request):
+        links = Link.objects.all()
+        serializer = LinkSerializer(links, context = {'request': request}, many = True)
+        return Response(serializer.data, status=200)
+    #ajouter un link
+    def post(self, request):
+        many = isinstance(request.data, list)  # Vérifie si les données sont une liste
+        serializer = LinkSerializer(data=request.data, context = {'request': request}, many = many)
+        if serializer.is_valid():
+            serializer.save()  
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
+    #modifier un link
+    def put(self, request):
+        link_id = request.query_params.get('id', None)
+        link = Link.objects.get(link_id=link_id)
+        serializer = LinkSerializer(link, data=request.data, partial=True, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+    #supprimer un link
+    def delete(self, request):
+        link_id = request.query_params.get('id', None)
+        link = Link.objects.get(link_id=link_id)
+        link.delete()
         return Response(status=204)
 #-------------------------------------------------------------------------------------------------
 #View pour les notifications

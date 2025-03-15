@@ -82,14 +82,27 @@ class Provider(models.Model):
     def __str__(self):
         return self.fullname
 
-#Modele de link entre utilisateur et prestataire (table 5)
+
+#-------------------------------------------------------------------------------------------------------------
+#Modele de demande de service (table 5)
+class Request(models.Model):
+    request_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    service = models.ForeignKey(Services, on_delete=models.CASCADE)
+    selected_dates = models.JSONField()
+    request_date = models.DateTimeField(auto_now_add=True)
+    request_status = models.CharField(max_length=20, choices=[('Pending', 'Pending'), ('Accepted', 'Accepted'), ('Rejected', 'Rejected')], default='Pending')
+
+    def __str__(self):
+        return f"{self.user.username} requested {self.service.service_name}"
+
+#Modele de link entre utilisateur et prestataire (table 6)
 class Link(models.Model):
     link_id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    # user = models.ForeignKey(User, on_delete=models.CASCADE)
     provider = models.ForeignKey(Provider, on_delete=models.CASCADE)
-    service = models.ForeignKey(Services, on_delete=models.CASCADE)
-    start_date = models.DateTimeField()
-    end_date = models.DateTimeField()
+    request = models.ForeignKey(Request, on_delete=models.CASCADE)
+    # service = models.ForeignKey(Services, on_delete=models.CASCADE)
     linked_date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=[
         ('pending', 'pending'),
@@ -98,21 +111,8 @@ class Link(models.Model):
     ], default='pending')
 
     def __str__(self):
-        return f"{self.user.username} linked to {self.provider.fullname}"
+        return f"{self.request.user} linked to {self.provider.fullname}"
     
-#-------------------------------------------------------------------------------------------------------------
-#Modele de demande de service (table 6)
-class Request(models.Model):
-    request_id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    service = models.ForeignKey(Services, on_delete=models.CASCADE)
-    start_date = models.DateTimeField()
-    end_date = models.DateTimeField()
-    request_date = models.DateTimeField(auto_now_add=True)
-    request_status = models.CharField(max_length=20, choices=[('Pending', 'Pending'), ('Accepted', 'Accepted'), ('Rejected', 'Rejected')], default='Pending')
-
-    def __str__(self):
-        return f"{self.user.username} requested {self.service.service_name}"
     
 #-------------------------------------------------------------------------------------------------------------
 #Modele de note et commentaire(table 7)

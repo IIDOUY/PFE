@@ -7,7 +7,8 @@ from .models import  User, Category, Services, Request, Provider, Link, Notifica
 from django.db import models
 from django.db.models import Q
 from rest_framework.parsers import MultiPartParser, FormParser
-from .models import Notification, create_notification
+from rest_framework.parsers import JSONParser
+from .models import Notification, create_notification, get_available_providers
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync  
 
@@ -230,7 +231,7 @@ class UserCategoryView(APIView):
 class ServicesView(APIView):
     permission_classes = [IsAuthenticated, IsAdminUser]  # Assure que l'utilisateur est authentifié
     authentication_classes = [JWTAuthentication]  # Utilise le JWT pour l'authentification
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     #lister les services
     def get(self, request):
@@ -329,6 +330,89 @@ class RequestView(APIView):
         request = Request.objects.get(request_id=request_id)
         request.delete()
         return Response(status=204)
+#View pour les prestateurs disponibles
+  #Pour l'administrateur
+from rest_framework import status
+class AvailableProvidersView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminUser]
+    authentication_classes = [JWTAuthentication]
+
+    def post(self, request):
+        service_id = request.data.get('service_id')
+        selected_dates = request.data.get('selected_dates')  # Liste des dates sélectionnées par l'utilisateur
+        
+        # Vérification des champs obligatoires
+        if not service_id or not selected_dates:
+            return Response(
+                {"error": "service_id and selected_dates are required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Obtenir la liste des prestataires disponibles
+        available_providers = get_available_providers(service_id, selected_dates)
+
+        if available_providers.exists():
+            # Construire une réponse avec les prestataires disponibles
+            providers_data = [
+                {
+                    "id": provider.id,
+                    "fullname": provider.fullname,
+                    "email": provider.email,
+                    "phone": provider.phone,
+                    "service": provider.service.service_name,
+                    "is_disponible": provider.is_disponible,
+                }
+                for provider in available_providers
+            ]
+            
+            return Response(
+                {"available_providers": providers_data},
+                status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"error": "Aucun prestataire disponible pour ces dates."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+class AssignProviderView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminUser]
+    authentication_classes = [JWTAuthentication]
+
+    def post(self, request):
+        request_id = request.data.get('request_id')
+        provider_id = request.data.get('provider_id')
+
+        # Vérifier les champs obligatoires
+        if not request_id or not provider_id:
+            return Response(
+                {"error": "request_id and provider_id are required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Récupérer les objets correspondants
+        request_instance = get_object_or_404(Request, request_id=request_id)
+        provider_instance = get_object_or_404(Provider, id=provider_id)
+        print(request_instance.request_id)
+        print(request_instance.service.service_id)
+        print(request_instance.selected_dates)
+        # Vérifier si le prestataire est bien disponible
+        available_providers = get_available_providers(request_instance.service.service_id, request_instance.selected_dates)
+
+        if provider_instance not in available_providers:
+            return Response(
+                {"error": "Ce prestataire n'est pas disponible pour les dates sélectionnées."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Assigner le prestataire à la demande
+        Link.objects.create(provider=provider_instance, request=request_instance, status='in progress')
+        provider_instance.is_disponible = False  # Marquer le prestataire comme occupé
+        provider_instance.save()
+        return Response(
+            {"message": f"Le prestataire {provider_instance.fullname} a été assigné avec succès."},
+            status=status.HTTP_200_OK
+        )
     
 #Pour l'utilisateur connecté
 from django.shortcuts import get_object_or_404
@@ -337,8 +421,16 @@ class UserRequestView(APIView):
     authentication_classes = [JWTAuthentication]  # Utilise le JWT pour l'authentification
     #lister les demandes
     def get(self, request):
-        requests = Request.objects.filter(user=request.user) 
-        serializer = RequestSerializer(requests, context = {'request': request}, many = True)  
+        search_query = request.query_params.get('query', None)  # Un seul paramètre pour la recherche
+
+        if not search_query:
+            requests = Request.objects.all()
+        else:
+            requests = Request.objects.filter(
+                models.Q(service__service_name__icontains=search_query)  # Recherche par service
+            )
+
+        serializer = RequestSerializer(requests, context={'request': request}, many=True)
         return Response(serializer.data, status=200)
     #ajouter une demande
     def post(self, request):

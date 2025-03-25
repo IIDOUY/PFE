@@ -96,6 +96,21 @@ class Request(models.Model):
     def __str__(self):
         return f"{self.user.username} requested {self.service.service_name}"
 
+def get_available_providers(service_id, selected_dates):
+    # Étape 1: Filtrer les prestataires qui offrent le service demandé et qui sont disponibles
+    available_providers = Provider.objects.filter(service_id=service_id, is_disponible=True)
+    
+    # Étape 2: Exclure les prestataires qui sont déjà liés à une demande aux mêmes dates
+    occupied_providers = Link.objects.filter(
+        request__selected_dates__overlap=selected_dates  # Vérifie si les dates se chevauchent
+    ).values_list('provider_id', flat=True)
+
+    # Étape 3: Exclure les prestataires occupés
+    free_providers = available_providers.exclude(id__in=occupied_providers)
+    
+    return free_providers
+#-------------------------------------------------------------------------------------------------------------
+
 #Modele de link entre utilisateur et prestataire (table 6)
 class Link(models.Model):
     link_id = models.AutoField(primary_key=True)

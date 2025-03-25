@@ -1,6 +1,7 @@
 from django.urls import path
 from .AuthenticationView import SignUpView, LogiInView, LogoutView, SendResetOTPView, VerifyResetOTPView, ResetPasswordView, AdminLoginView
-from .views import UserProfileView, CategoryView, ServicesView, RequestView, UserRequestView, UserView, UserServicesView, UserCategoryView, UserProviderView, ProviderProfileView, ProviderView, NotificationView, LinkView
+from .views import UserProfileView, CategoryView, ServicesView, RequestView, UserRequestView, UserView, UserServicesView
+from .views import ProviderProfileView, ProviderView, UserProviderView, LinkView, NotificationView, UserCategoryView, AvailableProvidersView,AssignProviderView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -45,6 +46,11 @@ urlpatterns = [
     path('links/', LinkView.as_view(), name='links'),
     #Endpoint pour la recuperation des liens entre les demandes et les prestataires pour un utilisateur connecté
     # path('user-links/', UserLinkView.as_view(), name='user_links'),
+    #-------------------------------------------------------------------------------------------------
+    #Endpoint pour la recuperation des prestataires disponibles
+    path('available-providers/', AvailableProvidersView.as_view(), name='available_providers'),
+    #Endpoint pour l'attribution d'un prestataire à une demande
+    path('assign-providers/', AssignProviderView.as_view(), name='assign_provider'),
     #------------------------------------------------------------------------------------------------- 
     # Les endpoints pour obtenir et rafraichir un token
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),   

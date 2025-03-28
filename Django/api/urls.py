@@ -1,7 +1,8 @@
 from django.urls import path
 from .AuthenticationView import SignUpView, LogiInView, LogoutView, SendResetOTPView, VerifyResetOTPView, ResetPasswordView, AdminLoginView
-from .views import UserProfileView, CategoryView, ServicesView, RequestView, UserRequestView, UserView, UserServicesView
-from .views import ProviderProfileView, ProviderView, UserProviderView, LinkView, NotificationView, UserCategoryView, AvailableProvidersView,AssignProviderView
+from .views import NotificationView
+from .userViews import UserProfileView, UserRequestView, UserCategoryView, UserServicesView, UserProviderView, UserLinkView,EvaluationView
+from .adminViews import UserView, CategoryView, ServicesView, ProviderView, RequestView, LinkView, AvailableProvidersView, AssignProviderView, ProviderProfileView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -45,12 +46,15 @@ urlpatterns = [
     #Endpoint pour la recuperation/ajout/modification/suppression des liens entre les demandes et les prestataires
     path('links/', LinkView.as_view(), name='links'),
     #Endpoint pour la recuperation des liens entre les demandes et les prestataires pour un utilisateur connecté
-    # path('user-links/', UserLinkView.as_view(), name='user_links'),
+    path('user-links/', UserLinkView.as_view(), name='user_links'),
     #-------------------------------------------------------------------------------------------------
     #Endpoint pour la recuperation des prestataires disponibles
     path('available-providers/', AvailableProvidersView.as_view(), name='available_providers'),
     #Endpoint pour l'attribution d'un prestataire à une demande
     path('assign-providers/', AssignProviderView.as_view(), name='assign_provider'),
+    #------------------------------------------------------------------------------------------------- 
+    #Endpoint pour l'evaluation d'un link par l'utilisateur
+    path('evaluation/', EvaluationView.as_view(), name='evaluation'),
     #------------------------------------------------------------------------------------------------- 
     # Les endpoints pour obtenir et rafraichir un token
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),   

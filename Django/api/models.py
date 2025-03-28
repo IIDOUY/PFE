@@ -139,7 +139,7 @@ class Evaluation(models.Model):
     evaluation_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.username} rated {self.service.service_name}"
+        return f"{self.link.request.user.username} rated {self.link.request.service.service_name} with {self.rating} stars"
 
 #Modele de reclamation (table 8)
 class Report(models.Model):

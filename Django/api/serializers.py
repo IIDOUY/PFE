@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Category, Services, Link, Request, Evaluation, Report, Provider, Notification
+from .models import User, Category, Services, Link, Request, Evaluation, Report, Provider, Notification, FavoriteServices
 from django.contrib.auth.hashers import make_password
 import re
 from datetime import datetime
@@ -62,7 +62,7 @@ class UserSerializer(serializers.ModelSerializer):
 class ProviderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Provider
-        fields = ['id', 'fullname', 'email','gender', 'phone', 'address', 'service', 'is_disponible', 'rating_avg']
+        fields = ['id', 'fullname', 'email','gender', 'phone', 'address', 'service', 'is_disponible', 'rating_avg', 'clients_served', 'experience_years'] 
         extra_kwargs = {
             'id': {'read_only': True}
         }
@@ -117,3 +117,12 @@ class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
         fields = ['notification_id', 'user', 'notification_date', 'notification_text', 'is_read']
+
+#FavoriteServices Serializer
+class FavoriteServicesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FavoriteServices
+        fields = ['id', 'user', 'service']
+        extra_kwargs = {
+            'id': {'read_only': True}
+        }

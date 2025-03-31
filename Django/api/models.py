@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager,PermissionsMixin
 from django.db import models
+from django.db.models import Avg
 
 
 # Création d'un manager personnalisé pour le modèle utilisateur
@@ -62,12 +63,26 @@ class Services(models.Model):
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
     service_price = models.FloatField()
     service_image = models.ImageField(upload_to='service_images/', default='service_images/default.png') 
+    request_count = models.IntegerField(default=0)  # Compteur de demandes pour ce service
 
 
     def __str__(self):
         return self.service_name
+    
+#Modele de services preferes (table 4)
+class FavoriteServices(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)  # Utilisateur qui ajoute aux favoris
+    service = models.ForeignKey(Services, on_delete=models.CASCADE)  # Service ajouté aux favoris
+    added_at = models.DateTimeField(auto_now_add=True)  # Date d'ajout
 
-#Modele de prestataire du service (table 4)
+    class Meta:
+        unique_together = ('user', 'service')  # Un service ne peut être ajouté qu'une seule fois par utilisateur
+
+    def __str__(self):
+        return f"{self.user.username} - {self.service.service_name}"
+
+
+#Modele de prestataire du service (table 5)
 class Provider(models.Model):
     fullname = models.CharField(max_length=150)
     email = models.EmailField(unique=True)
@@ -77,14 +92,26 @@ class Provider(models.Model):
     service = models.ForeignKey(Services, on_delete=models.CASCADE, default='1')
     is_disponible = models.BooleanField(default=True)
     rating_avg = models.FloatField(default=0)
+    experience_years = models.IntegerField(default=0)  # Ajout des années d'expérience
+    clients_served = models.IntegerField(default=0)  # Ajout du nombre de clients servis
     added_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.fullname
+    def update_rating(self):
+        """Met à jour la moyenne des évaluations de ce provider"""
+        avg_rating = Evaluation.objects.filter(link__provider=self).aggregate(Avg('rating'))['rating__avg']
+        self.rating_avg = avg_rating if avg_rating is not None else 0
+        self.save()
+    
+    def update_clients_served(self):
+        clients_count = Link.objects.filter(provider=self).count()  # Compte le nombre de services fournis
+        self.clients_served = clients_count
 
+        self.save()
 
 #-------------------------------------------------------------------------------------------------------------
-#Modele de demande de service (table 5)
+#Modele de demande de service (table 6)
 class Request(models.Model):
     request_id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -95,23 +122,52 @@ class Request(models.Model):
 
     def __str__(self):
         return f"{self.user.username} requested {self.service.service_name}"
+#-------------------------------------------------------------------------------------------------------------
+#Fonction pour obtenir les prestataires disponibles pour un service donné et des dates sélectionnées
+# def get_available_providers(service_id, selected_dates):
+#     # Étape 1: Filtrer les prestataires qui offrent le service demandé et qui sont disponibles
+#     available_providers = Provider.objects.filter(service_id=service_id, is_disponible=True)
+    
+#     # Étape 2: Exclure les prestataires qui sont déjà liés à une demande aux mêmes dates
+#     occupied_providers = Link.objects.filter(
+#         request__selected_dates__overlap=selected_dates  # Vérifie si les dates se chevauchent
+#     ).values_list('provider_id', flat=True)
 
+#     # Étape 3: Exclure les prestataires occupés
+#     free_providers = available_providers.exclude(id__in=occupied_providers)
+    
+#     return free_providers
 def get_available_providers(service_id, selected_dates):
-    # Étape 1: Filtrer les prestataires qui offrent le service demandé et qui sont disponibles
-    available_providers = Provider.objects.filter(service_id=service_id, is_disponible=True)
-    
-    # Étape 2: Exclure les prestataires qui sont déjà liés à une demande aux mêmes dates
-    occupied_providers = Link.objects.filter(
-        request__selected_dates__overlap=selected_dates  # Vérifie si les dates se chevauchent
-    ).values_list('provider_id', flat=True)
+    # Récupérer tous les prestataires du service donné
+    providers = Provider.objects.filter(service_id=service_id)
 
-    # Étape 3: Exclure les prestataires occupés
-    free_providers = available_providers.exclude(id__in=occupied_providers)
+    # Vérifier pour chaque prestataire s'il est libre aux dates demandées
+    available_providers = []
+    for provider in providers:
+        is_available = True
+        for date_time in selected_dates:  # selected_dates contient date + heure
+            date, time = date_time.split("T")  # Supposons un format "YYYY-MM-DDTHH:MM"
+            if Availability.objects.filter(provider=provider, date=date, start_time__lte=time, end_time__gte=time).exists():
+                is_available = False
+                break
+
+        if is_available:
+            available_providers.append(provider)
+
+    return Provider.objects.filter(id__in=[p.id for p in available_providers])
+
+class Availability(models.Model):
+    provider = models.ForeignKey(Provider, on_delete=models.CASCADE, related_name="availabilities")
+    date = models.DateField()
+    start_time = models.TimeField()
+    end_time = models.TimeField()
     
-    return free_providers
+    class Meta:
+        unique_together = ("provider", "date", "start_time", "end_time")
+
 #-------------------------------------------------------------------------------------------------------------
 
-#Modele de link entre utilisateur et prestataire (table 6)
+#Modele de link entre utilisateur et prestataire (table 7)
 class Link(models.Model):
     link_id = models.AutoField(primary_key=True)
     # user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -130,7 +186,7 @@ class Link(models.Model):
     
     
 #-------------------------------------------------------------------------------------------------------------
-#Modele de note et commentaire(table 7)
+#Modele de note et commentaire(table 8)
 class Evaluation(models.Model):
     evaluation_id = models.AutoField(primary_key=True)
     link = models.ForeignKey(Link, on_delete=models.CASCADE)
@@ -138,10 +194,13 @@ class Evaluation(models.Model):
     comment = models.TextField()
     evaluation_date = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        unique_together = ('link',)  # Empêche plusieurs évaluations sur le même link
+
     def __str__(self):
         return f"{self.link.request.user.username} rated {self.link.request.service.service_name} with {self.rating} stars"
 
-#Modele de reclamation (table 8)
+#Modele de reclamation (table 9)
 class Report(models.Model):
     report_id = models.AutoField(primary_key=True)
     link = models.ForeignKey(Link, on_delete=models.CASCADE)
@@ -155,7 +214,7 @@ class Report(models.Model):
         return f"{self.user.username} reported {self.provider.fullname}"
     
 #-------------------------------------------------------------------------------------------------------------
-#Modele de paiement (table 9)
+#Modele de paiement (table 10)
 class Payment(models.Model):
     payment_id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -168,7 +227,7 @@ class Payment(models.Model):
         return f"{self.user.username} paid {self.link.link_id}"
     
 #-------------------------------------------------------------------------------------------------------------
-#Modele reset password (table 10)
+#Modele reset password (table 11)
 class PasswordResetOTP(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     otp = models.CharField(max_length=6)  # Code OTP à 6 chiffres
@@ -182,7 +241,7 @@ class PasswordResetOTP(models.Model):
     def __str__(self):
         return f"OTP for {self.user.email}"
     
-#Modele de notification (table 11)
+#Modele de notification (table 12)
 class Notification(models.Model):
     notification_id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)

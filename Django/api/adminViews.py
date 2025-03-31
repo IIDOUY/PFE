@@ -8,7 +8,7 @@ from django.db import models
 from django.db.models import Q
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.parsers import JSONParser
-from .models import Notification, create_notification, get_available_providers
+from .models import Notification, create_notification, get_available_providers, Availability
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync 
 from django.shortcuts import get_object_or_404
@@ -300,9 +300,7 @@ class AssignProviderView(APIView):
         # Récupérer les objets correspondants
         request_instance = get_object_or_404(Request, request_id=request_id)
         provider_instance = get_object_or_404(Provider, id=provider_id)
-        print(request_instance.request_id)
-        print(request_instance.service.service_id)
-        print(request_instance.selected_dates)
+
         # Vérifier si le prestataire est bien disponible
         available_providers = get_available_providers(request_instance.service.service_id, request_instance.selected_dates)
 
@@ -314,8 +312,24 @@ class AssignProviderView(APIView):
 
         # Assigner le prestataire à la demande
         Link.objects.create(provider=provider_instance, request=request_instance, status='in progress')
-        provider_instance.is_disponible = False  # Marquer le prestataire comme occupé
+        # Ajouter les disponibilités du prestataire pour cette demande
+        for date_time in request_instance.selected_dates:
+            date, time = date_time.split("T")
+            Availability.objects.create(
+                provider=provider_instance,
+                date=date,
+                start_time=time,  # Ajustez selon vos besoins
+                end_time=time  # Ajustez selon la durée du service
+            )
+
         provider_instance.save()
+        # ✅ Envoi d'une notification à l'utilisateur concerné
+        user = request_instance.user
+        create_notification(user, f"Un prestataire a été assigné à votre demande de service : {request_instance.service.service_name}.")
+
+        # ✅ Notification en temps réel
+        send_realtime_notification(f"Un prestataire a été assigné à la demande de {user.username} pour le service {request_instance.service.service_name}.")
+
         return Response(
             {"message": f"Le prestataire {provider_instance.fullname} a été assigné avec succès."},
             status=status.HTTP_200_OK

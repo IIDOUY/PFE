@@ -11,6 +11,7 @@ from rest_framework.parsers import JSONParser
 from .models import Notification, create_notification, get_available_providers
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync  
+from rest_framework import status
 
 
 #View pour les notifications
@@ -37,3 +38,17 @@ def send_realtime_notification(message):
             "message": message
         }
     )
+#View pour les services populaires
+class PopularServicesView(APIView):
+    def get(self, request):
+        # 🔥 Obtenir les services les plus demandés (triés par `requests_count`)
+        popular_services = Services.objects.all().order_by('-request_count')[:10]  # Top 10 services
+        serializer = ServicesSerializer(popular_services, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)   
+#View pour les prestataires populaires
+class PopularProvidersView(APIView):
+    def get(self, request):
+        # 🔥 Obtenir les prestataires les plus actifs (triés par `clients_served`)
+        popular_providers = Provider.objects.all().order_by('-clients_served')[:10]  # Top 10 prestataires
+        serializer = ProviderSerializer(popular_providers, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

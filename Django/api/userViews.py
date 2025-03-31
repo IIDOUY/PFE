@@ -1,9 +1,9 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import UserSerializer, CategorySerializer, ServicesSerializer, RequestSerializer, ProviderSerializer, NotificationSerializer, LinkSerializer, EvaluationSerializer, ReportSerializer
+from .serializers import UserSerializer, CategorySerializer, ServicesSerializer, RequestSerializer, ProviderSerializer, NotificationSerializer, LinkSerializer, EvaluationSerializer, ReportSerializer, FavoriteServicesSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from .models import  User, Category, Services, Request, Provider, Link, Notification, Evaluation, Report
+from .models import  User, Category, Services, Request, Provider, Link, Notification, Evaluation, Report, FavoriteServices
 from django.db import models
 from django.db.models import Q
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -118,14 +118,14 @@ class UserRequestView(APIView):
     authentication_classes = [JWTAuthentication]  # Utilise le JWT pour l'authentification
     #lister les demandes
     def get(self, request):
-        search_query = request.query_params.get('query', None)  # Un seul paramètre pour la recherche
+        search_query = request.query_params.get('query', None)  # Paramètre de recherche facultatif
 
-        if not search_query:
-            requests = Request.objects.all()
-        else:
-            requests = Request.objects.filter(
-                models.Q(service__service_name__icontains=search_query)  # Recherche par service
-            )
+        # Filtrer les demandes de l'utilisateur connecté
+        requests = Request.objects.filter(user=request.user)
+
+        # Si une recherche est fournie, appliquer un filtre supplémentaire
+        if search_query:
+            requests = requests.filter(service__service_name__icontains=search_query)
 
         serializer = RequestSerializer(requests, context={'request': request}, many=True)
         return Response(serializer.data, status=200)
@@ -181,6 +181,16 @@ class UserLinkView(APIView):
 
         serializer = LinkSerializer(links, context={'request': request}, many=True)
         return Response(serializer.data, status=200)
+    
+class InProgressLinksCountView(APIView):
+    permission_classes = [IsAuthenticated]  # ✅ L'utilisateur doit être connecté
+    authentication_classes = [JWTAuthentication]  # ✅ Utilise le JWT pour l'authentification
+
+    def get(self, request):
+        # ✅ Filtrer les links "in progress" de l'utilisateur connecté
+        in_progress_count = Link.objects.filter(request__user=request.user, status='in progress').count()
+
+        return Response({"in_progress_links_count": in_progress_count}, status=200)
 #-----------------------------------------------------------------------------------
 #Views pour les evaluations
 class EvaluationView(APIView):
@@ -191,17 +201,30 @@ class EvaluationView(APIView):
         link_id = request.data.get("link_id")
         rating = request.data.get("rating")
         comment = request.data.get("comment")
-
+        
         # Vérification des champs obligatoires
         if not link_id or rating is None or not comment:
             return Response({"error": "link_id, rating et comment sont requis."}, status=status.HTTP_400_BAD_REQUEST)
-
+        
         # Vérifier si le link existe
         link = get_object_or_404(Link, link_id=link_id)
 
         # Vérifier que l'utilisateur connecté est bien le bénéficiaire du service
         if link.request.user != request.user:
             return Response({"error": "Vous ne pouvez évaluer que vos propres services."}, status=status.HTTP_403_FORBIDDEN)
+
+        # Vérifier si une évaluation existe déjà pour ce link
+        if Evaluation.objects.filter(link=link).exists():
+            return Response(
+                {"error": "Ce service a déjà été évalué."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        # Vérifier que la note est valide
+        if rating < 1 or rating > 5:
+            return Response({"error": "La note doit être comprise entre 1 et 5."}, status=status.HTTP_400_BAD_REQUEST)
+        # Vérifier que le commentaire n'est pas vide
+        if not comment.strip():
+            return Response({"error": "Le commentaire ne peut pas être vide."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Créer l'évaluation
         evaluation = Evaluation.objects.create(
@@ -211,3 +234,37 @@ class EvaluationView(APIView):
         )
 
         return Response({"message": "Évaluation enregistrée avec succès."}, status=status.HTTP_201_CREATED)
+#-------------------------------------------------------------------------------------------------
+#Views pour les services preferes:
+class UserFavoriteServicesView(APIView):
+    permission_classes = [IsAuthenticated]  # Assure que l'utilisateur est authentifié
+    authentication_classes = [JWTAuthentication]  # Utilise le JWT pour l'authentification
+    #lister les services preferes
+    def get(self, request):
+        search_query = request.query_params.get('query', None)
+
+        favorite_services = FavoriteServices.objects.filter(user=request.user)
+    
+        if search_query:
+            favorite_services = favorite_services.filter(
+                models.Q(service__service_name__icontains=search_query) |
+                models.Q(service__service_description__icontains=search_query)
+            )
+
+        serializer = FavoriteServicesSerializer(favorite_services, context={'request': request}, many=True)
+        return Response(serializer.data, status=200)
+    #ajouter un service prefere
+    def post(self, request):
+        request.data['user'] = request.user.id
+        serializer = FavoriteServicesSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
+    #supprimer un service prefere
+    def delete(self, request):
+        service_id = request.query_params.get('id', None)
+        favorite_service = FavoriteServices.objects.get(service_id=service_id, user=request.user)
+        favorite_service.delete()
+        return Response(status=204)
+#-------------------------------------------------------------------------------------------------

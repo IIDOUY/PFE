@@ -1,7 +1,7 @@
 from django.urls import path
 from .AuthenticationView import SignUpView, LogiInView, LogoutView, SendResetOTPView, VerifyResetOTPView, ResetPasswordView, AdminLoginView
-from .views import NotificationView
-from .userViews import UserProfileView, UserRequestView, UserCategoryView, UserServicesView, UserProviderView, UserLinkView,EvaluationView
+from .views import NotificationView, PopularServicesView, PopularProvidersView
+from .userViews import UserProfileView, UserRequestView, UserCategoryView, UserServicesView, UserProviderView, UserLinkView,EvaluationView, UserFavoriteServicesView, InProgressLinksCountView
 from .adminViews import UserView, CategoryView, ServicesView, ProviderView, RequestView, LinkView, AvailableProvidersView, AssignProviderView, ProviderProfileView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -47,11 +47,20 @@ urlpatterns = [
     path('links/', LinkView.as_view(), name='links'),
     #Endpoint pour la recuperation des liens entre les demandes et les prestataires pour un utilisateur connecté
     path('user-links/', UserLinkView.as_view(), name='user_links'),
+    #Endpoint pour la recuperation du nombre de liens en cours pour un utilisateur connecté
+    path('in-progress-links-count/', InProgressLinksCountView.as_view(), name='in_progress_links_count'),
+    #--------------------------------------------------------------------------------------------------
+    #Endpoint pour la recuperation/ajout/modification/suppression des services favoris d'un utilisateur
+    path('favorite-services/', UserFavoriteServicesView.as_view(), name='favorite_services'),
+    #Endpoint pour la recuperation des services les plus populaires
+    path('popular-services/', PopularServicesView.as_view(), name='popular_services'),
     #-------------------------------------------------------------------------------------------------
     #Endpoint pour la recuperation des prestataires disponibles
     path('available-providers/', AvailableProvidersView.as_view(), name='available_providers'),
     #Endpoint pour l'attribution d'un prestataire à une demande
     path('assign-providers/', AssignProviderView.as_view(), name='assign_provider'),
+    #Endpoint pour la recuperation des prestataires les plus populaires
+    path('popular-providers/', PopularProvidersView.as_view(), name='popular_providers'),
     #------------------------------------------------------------------------------------------------- 
     #Endpoint pour l'evaluation d'un link par l'utilisateur
     path('evaluation/', EvaluationView.as_view(), name='evaluation'),
